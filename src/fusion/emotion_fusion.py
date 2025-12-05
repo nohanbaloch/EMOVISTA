@@ -4,8 +4,14 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
-import joblib
-from tensorflow.keras.models import load_model
+try:
+    import joblib  # type: ignore
+except Exception:
+    joblib = None
+try:
+    from tensorflow.keras.models import load_model  # type: ignore
+except Exception:
+    load_model = None
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +49,8 @@ def load_all(verbose: bool = False) -> Tuple[Optional[object], Optional[object],
     # load FER model: prefer exact configured paths, but also attempt to
     # discover common variations (e.g. `models/Fer_model/fer_model.keras`).
     def _discover_and_load_fer():
+        if load_model is None:
+            return None, None
         # try configured candidates first
         for p in FER_MODEL_PATHS:
             if p.exists():
@@ -99,41 +107,45 @@ def load_all(verbose: bool = False) -> Tuple[Optional[object], Optional[object],
         logger.info("FER model not found under %s; expected one of: %s", BASE / 'models', FER_MODEL_PATHS)
 
     # speech model
-    for p in SPEECH_MODEL_PATHS:
-        try:
-            if p.exists():
-                if verbose:
-                    logger.info("Attempting to load speech model from %s", p)
-                speech_model = load_model(str(p))
-                if verbose:
-                    logger.info("Loaded speech model from %s", p)
-                break
-        except Exception as ex:
-            logger.warning("Failed to load speech model from %s: %s", p, ex)
-            speech_model = None
-            continue
+    if load_model is not None:
+        for p in SPEECH_MODEL_PATHS:
+            try:
+                if p.exists():
+                    if verbose:
+                        logger.info("Attempting to load speech model from %s", p)
+                    speech_model = load_model(str(p))
+                    if verbose:
+                        logger.info("Loaded speech model from %s", p)
+                    break
+            except Exception as ex:
+                logger.warning("Failed to load speech model from %s: %s", p, ex)
+                speech_model = None
+                continue
 
     # text model / artifacts
-    try:
-        if TEXT_MODEL_PATH.exists():
-            text_model = joblib.load(TEXT_MODEL_PATH)
-    except Exception as ex:
-        logger.warning("Failed to load text model from %s: %s", TEXT_MODEL_PATH, ex)
-        text_model = None
+    if joblib is not None:
+        try:
+            if TEXT_MODEL_PATH.exists():
+                text_model = joblib.load(TEXT_MODEL_PATH)
+        except Exception as ex:
+            logger.warning("Failed to load text model from %s: %s", TEXT_MODEL_PATH, ex)
+            text_model = None
 
-    try:
-        if VECT_PATH.exists():
-            vectorizer = joblib.load(VECT_PATH)
-    except Exception as ex:
-        logger.warning("Failed to load vectorizer from %s: %s", VECT_PATH, ex)
-        vectorizer = None
+    if joblib is not None:
+        try:
+            if VECT_PATH.exists():
+                vectorizer = joblib.load(VECT_PATH)
+        except Exception as ex:
+            logger.warning("Failed to load vectorizer from %s: %s", VECT_PATH, ex)
+            vectorizer = None
 
-    try:
-        if SPEECH_LE_PATH.exists():
-            speech_le = joblib.load(SPEECH_LE_PATH)
-    except Exception as ex:
-        logger.warning("Failed to load speech label encoder from %s: %s", SPEECH_LE_PATH, ex)
-        speech_le = None
+    if joblib is not None:
+        try:
+            if SPEECH_LE_PATH.exists():
+                speech_le = joblib.load(SPEECH_LE_PATH)
+        except Exception as ex:
+            logger.warning("Failed to load speech label encoder from %s: %s", SPEECH_LE_PATH, ex)
+            speech_le = None
 
     return fer_model, speech_model, text_model, vectorizer, speech_le
 
@@ -201,7 +213,7 @@ def fuse(fer_pred: Optional[np.ndarray], speech_pred: Optional[np.ndarray], spee
         text_arr = None
 
     # Learned fusion path
-    if FUSION_MODEL_PATH.exists():
+    if FUSION_MODEL_PATH.exists() and joblib is not None:
         try:
             payload = joblib.load(FUSION_MODEL_PATH)
             # payload may be the model itself or a dict

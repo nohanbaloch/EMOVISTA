@@ -1,5 +1,11 @@
 import numpy as np
 import pytest
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from src.fusion.emotion_fusion import map_speech_to_fer, fuse, fer_labels
 
