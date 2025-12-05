@@ -3,7 +3,6 @@
 EMOVISTA is an advanced emotion-analysis platform that fuses facial expressions, voice tone, and text sentiment into one unified emotional understanding. Built for researchers, developers, and human-centric AI applications, EMOVISTA provides a complete toolkit for real-time emotion recognition, visualization, and interaction
 
 =======
->>>>>>> 8432676 (added .venv in the .gitignore to exclution)
 # EmotionAwareAI
 Full Emotion-Aware AI Assistant (FER + Speech (CREMA-D) + Text Fusion)
 
@@ -31,4 +30,3 @@ Notes:
 - Models are not included due to size; train them or load your own into `models/`.
 =======
 - Models are not included due to size; train them or load your own into `models/`.
->>>>>>> 8432676 (added .venv in the .gitignore to exclution)
