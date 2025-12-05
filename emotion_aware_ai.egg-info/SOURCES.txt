@@ -1,0 +1,12 @@
+README.md
+setup.py
+emotion_aware_ai.egg-info/PKG-INFO
+emotion_aware_ai.egg-info/SOURCES.txt
+emotion_aware_ai.egg-info/dependency_links.txt
+emotion_aware_ai.egg-info/requires.txt
+emotion_aware_ai.egg-info/top_level.txt
+src/__init__.py
+src/main.py
+src/fusion/__init__.py
+src/fusion/emotion_fusion.py
+tests/test_fusion.py

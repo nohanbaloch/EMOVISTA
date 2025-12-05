@@ -1,0 +1,50 @@
+2025-12-02 01:11:41,807 - INFO - Root: C:\Data\Emotion-Aware AI Assistant
+2025-12-02 01:11:41,808 - INFO - CREMA audio dir: C:\Data\Emotion-Aware AI Assistant\Data\CREMA-D\AudioWAV
+2025-12-02 01:11:41,809 - INFO - Features path: C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy
+2025-12-02 01:11:41,812 - INFO - Found existing features at C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy; skipping extraction.
+2025-12-02 01:11:41,922 - INFO - Starting training: X=(7442, 40), classes=[np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-02 01:11:53,292 - INFO - Saved speech model to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_model.keras and label encoder to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_label_encoder.pkl
+2025-12-02 01:11:53,294 - INFO - Wrote training report JSON to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.json
+2025-12-02 01:11:53,297 - INFO - Wrote training history CSV to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.csv
+2025-12-02 01:11:53,449 - INFO - Saved training plot to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.png
+2025-12-02 01:11:53,650 - INFO - Wrote validation classification report to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-02 01:12:39,253 - INFO - Root: C:\Data\Emotion-Aware AI Assistant
+2025-12-02 01:12:39,254 - INFO - CREMA audio dir: C:\Data\Emotion-Aware AI Assistant\Data\CREMA-D\AudioWAV
+2025-12-02 01:12:39,255 - INFO - Features path: C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy
+2025-12-02 01:12:39,257 - INFO - Found existing features at C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy; skipping extraction.
+2025-12-02 01:12:39,358 - INFO - Starting training: X=(7442, 40), classes=[np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-02 01:13:32,644 - INFO - Saved speech model to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_model.keras and label encoder to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_label_encoder.pkl
+2025-12-02 01:13:32,648 - INFO - Wrote training report JSON to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.json
+2025-12-02 01:13:32,650 - INFO - Wrote training history CSV to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.csv
+2025-12-02 01:13:32,793 - INFO - Saved training plot to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.png
+2025-12-02 01:13:32,991 - INFO - Wrote validation classification report to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-02 01:17:56,627 - INFO - Root: C:\Data\Emotion-Aware AI Assistant
+2025-12-02 01:17:56,628 - INFO - CREMA audio dir: C:\Data\Emotion-Aware AI Assistant\Data\CREMA-D\AudioWAV
+2025-12-02 01:17:56,629 - INFO - Features path: C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy
+2025-12-02 01:17:56,634 - INFO - Found existing features at C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy; skipping extraction.
+2025-12-02 01:17:56,741 - INFO - Starting training: X=(7442, 40), classes=[np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-02 01:19:43,584 - INFO - Saved speech model to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_model.keras and label encoder to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_label_encoder.pkl
+2025-12-02 01:19:43,587 - INFO - Wrote training report JSON to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.json
+2025-12-02 01:19:43,589 - INFO - Wrote training history CSV to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.csv
+2025-12-02 01:19:43,743 - INFO - Saved training plot to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.png
+2025-12-02 01:19:43,940 - INFO - Wrote validation classification report to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-02 01:28:14,226 - INFO - Root: C:\Data\Emotion-Aware AI Assistant
+2025-12-02 01:28:14,227 - INFO - CREMA audio dir: C:\Data\Emotion-Aware AI Assistant\Data\CREMA-D\AudioWAV
+2025-12-02 01:28:14,228 - INFO - Features path: C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy
+2025-12-02 01:28:14,230 - INFO - Found existing features at C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy; skipping extraction.
+2025-12-02 01:28:14,351 - INFO - Starting training: X=(7442, 40), classes=[np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-02 01:29:22,803 - INFO - Saved speech model to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_model.keras and label encoder to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_label_encoder.pkl
+2025-12-02 01:29:22,806 - INFO - Wrote training report JSON to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.json
+2025-12-02 01:29:22,808 - INFO - Wrote training history CSV to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.csv
+2025-12-02 01:29:22,968 - INFO - Saved training plot to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.png
+2025-12-02 01:29:23,174 - INFO - Wrote validation classification report to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-02 01:31:45,765 - INFO - Root: C:\Data\Emotion-Aware AI Assistant
+2025-12-02 01:31:45,766 - INFO - CREMA audio dir: C:\Data\Emotion-Aware AI Assistant\Data\CREMA-D\AudioWAV
+2025-12-02 01:31:45,767 - INFO - Features path: C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy
+2025-12-02 01:31:45,770 - INFO - Found existing features at C:\Data\Emotion-Aware AI Assistant\data\speech\features_cremad.npy; skipping extraction.
+2025-12-02 01:31:45,868 - INFO - Starting training: X=(7442, 40), classes=[np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-02 01:33:24,888 - INFO - Saved speech model to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_model.keras and label encoder to C:\Data\Emotion-Aware AI Assistant\models\speech_model\speech_label_encoder.pkl
+2025-12-02 01:33:24,891 - INFO - Wrote training report JSON to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.json
+2025-12-02 01:33:24,894 - INFO - Wrote training history CSV to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.csv
+2025-12-02 01:33:25,041 - INFO - Saved training plot to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.png
+2025-12-02 01:33:25,241 - INFO - Wrote validation classification report to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.txt

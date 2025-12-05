@@ -1,0 +1,10 @@
+FER training report
+Model path: c:\Data\Emotion-Aware AI Assistant\src\fer\..\..\models\fer_model\fer_model.keras
+Final validation loss: 1.4342879056930542
+Final validation accuracy: 0.4506826400756836
+
+Saved artifacts:
+ - history JSON: c:\Data\Emotion-Aware AI Assistant\src\fer\..\..\models\fer_model\report_and_log\fer_history.json
+ - CSV log: c:\Data\Emotion-Aware AI Assistant\src\fer\..\..\models\fer_model\report_and_log\fer_training.csv
+ - plot: c:\Data\Emotion-Aware AI Assistant\src\fer\..\..\models\fer_model\report_and_log\fer_history.png
+ - tensorboard logs: c:\Data\Emotion-Aware AI Assistant\src\fer\..\..\models\fer_model\report_and_log\logs

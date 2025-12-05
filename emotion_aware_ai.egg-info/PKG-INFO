@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: emotion-aware-ai
+Version: 0.1.0
+Summary: Emotion-Aware AI Assistant - FER + Speech + Text fusion
+Requires-Python: >=3.8
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: tensorflow
+Requires-Dist: keras
+Requires-Dist: librosa
+Requires-Dist: joblib
+Requires-Dist: customtkinter
+Requires-Dist: opencv-python
+Requires-Dist: sounddevice
+Requires-Dist: tqdm
+Requires-Dist: matplotlib
+Requires-Dist: pytest
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

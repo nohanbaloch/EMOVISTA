@@ -1,0 +1,7 @@
+body { font-family: Arial, sans-serif; background: #f5f7fb; color: #222; }
+.container { max-width: 720px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+h1 { margin-top: 0 }
+label { display:block; margin-top: 12px; font-weight:600 }
+input[type=file], input[type=text] { margin-top:6px }
+button { margin-top: 12px; padding: 8px 16px; font-size: 16px }
+.result { margin-top: 18px; padding: 12px; background: #eef2ff; border-radius: 6px }

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Emotion-Aware AI Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1>Emotion-Aware AI Assistant</h1>
+
+      <form id="predict-form">
+        <label>Image (face):</label>
+        <input type="file" name="image" accept="image/*"><br>
+
+        <label>Audio (wav):</label>
+        <input type="file" name="audio" accept="audio/*"><br>
+
+        <label>Text:</label>
+        <input type="text" name="text" placeholder="Type a message..." style="width:100%"><br>
+
+        <button type="submit">Predict</button>
+      </form>
+
+      <div id="result" class="result"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
