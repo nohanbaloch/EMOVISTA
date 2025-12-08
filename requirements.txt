@@ -1,1 +1,11 @@
 flask
+streamlit
+streamlit-webrtc
+av
+opencv-python
+librosa
+numpy
+joblib
+tensorflow
+scikit-learn
+matplotlib
