@@ -1,23 +1,5 @@
 """
-EMOVISTA - Streamlit Real-time Multimodal App (Option A)
-
-Single-file Streamlit app that:
- - captures webcam video frames (FER)
- - captures microphone audio (SER)
- - takes text input
- - fuses FER+SER+Text via your fusion.emotion_fusion module
- - displays live results
-
-Usage:
-1) Install dependencies (see instructions below)
-2) From project root run:
-    streamlit run app.py
-
-Notes:
- - streamlit-webrtc relies on PyAV (av) and browser permissions for webcam/mic.
- - For local dev, streamlit-webrtc works without HTTPS (it uses websockets).
- - This app expects your models & fusion module at src/fusion/emotion_fusion.py
-"""
+EMOVISTA - Streamlit Real-time Multimodal App ()
 
 
 

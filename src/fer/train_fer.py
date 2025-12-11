@@ -99,7 +99,7 @@ model.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
     loss='categorical_crossentropy',
     metrics=['accuracy']
-)
+) 
 
 model.summary()
 

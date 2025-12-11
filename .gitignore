@@ -1,4 +1,7 @@
+*
 /.github/
 /.venv/
 /.vscode/
 /data/
+/folder_structure.json/
+/folder_structure_to_json.py/

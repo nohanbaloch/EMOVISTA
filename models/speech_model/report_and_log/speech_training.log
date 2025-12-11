@@ -48,3 +48,33 @@
 2025-12-02 01:33:24,894 - INFO - Wrote training history CSV to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.csv
 2025-12-02 01:33:25,041 - INFO - Saved training plot to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_history.png
 2025-12-02 01:33:25,241 - INFO - Wrote validation classification report to C:\Data\Emotion-Aware AI Assistant\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-09 00:24:03,261 - INFO - Using existing features.
+2025-12-09 00:24:03,411 - INFO - Training 1D-CNN with classes: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-09 00:26:41,449 - INFO - Saved model to C:\Data\EMOVISTA\models\speech_model\speech_model.keras and label encoder to C:\Data\EMOVISTA\models\speech_model\speech_label_encoder.pkl
+2025-12-09 00:26:41,452 - INFO - Saved JSON report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.json
+2025-12-09 00:26:41,681 - INFO - Saved plot to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_history.png
+2025-12-09 00:26:41,977 - INFO - Saved validation report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-09 00:29:17,696 - INFO - Using existing features.
+2025-12-09 00:29:17,794 - INFO - Training 1D-CNN with classes: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-09 00:32:00,047 - INFO - Saved model to C:\Data\EMOVISTA\models\speech_model\speech_model.keras and label encoder to C:\Data\EMOVISTA\models\speech_model\speech_label_encoder.pkl
+2025-12-09 00:32:00,049 - INFO - Saved JSON report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.json
+2025-12-09 00:32:00,135 - INFO - Saved plot to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_history.png
+2025-12-09 00:32:00,440 - INFO - Saved validation report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-09 00:36:39,461 - INFO - Using existing features.
+2025-12-09 00:36:39,622 - INFO - Training 1D-CNN with classes: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-09 00:41:36,067 - INFO - Saved model to C:\Data\EMOVISTA\models\speech_model\speech_model.keras and label encoder to C:\Data\EMOVISTA\models\speech_model\speech_label_encoder.pkl
+2025-12-09 00:41:36,069 - INFO - Saved JSON report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.json
+2025-12-09 00:41:36,166 - INFO - Saved plot to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_history.png
+2025-12-09 00:41:36,492 - INFO - Saved validation report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-09 00:44:21,232 - INFO - Using existing features.
+2025-12-09 00:44:21,280 - INFO - Training 1D-CNN with classes: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-09 00:50:03,471 - INFO - Saved model to C:\Data\EMOVISTA\models\speech_model\speech_model.keras and label encoder to C:\Data\EMOVISTA\models\speech_model\speech_label_encoder.pkl
+2025-12-09 00:50:03,474 - INFO - Saved JSON report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.json
+2025-12-09 00:50:03,569 - INFO - Saved plot to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_history.png
+2025-12-09 00:50:03,899 - INFO - Saved validation report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.txt
+2025-12-09 00:51:37,187 - INFO - Using existing features.
+2025-12-09 00:51:37,252 - INFO - Training 1D-CNN with classes: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad')]
+2025-12-09 01:02:20,271 - INFO - Saved model to C:\Data\EMOVISTA\models\speech_model\speech_model.keras and label encoder to C:\Data\EMOVISTA\models\speech_model\speech_label_encoder.pkl
+2025-12-09 01:02:20,274 - INFO - Saved JSON report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.json
+2025-12-09 01:02:20,426 - INFO - Saved plot to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_history.png
+2025-12-09 01:02:20,831 - INFO - Saved validation report to C:\Data\EMOVISTA\models\speech_model\report_and_log\speech_training_report.txt

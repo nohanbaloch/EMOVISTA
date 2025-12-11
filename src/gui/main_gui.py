@@ -19,7 +19,7 @@ import joblib, librosa
 from cv2 import data as cv2_data
 
 # --- Logging setup ---
-logger = logging.getLogger('emotion_gui')
+logger = logging.getLogger('EMOVISTA_gui')
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
@@ -82,7 +82,7 @@ cv2_frame_label.pack(pady=6)
 def run_realtime():
     # If models are not loaded, warn
     if fer_model is None:
-        messagebox.showwarning("Model missing", "FER model not found in models/. Train or place fer_model.keras first.")
+        messagebox.showwarning("Model missing", "FER model not found in models/. Train or place Emo.keras first.")
         return
     cap = cv2.VideoCapture(0)
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -115,7 +115,7 @@ def run_realtime():
                     roi_proc = cv2.cvtColor(roi_resized, cv2.COLOR_BGR2GRAY)
                     roi_proc = roi_proc.astype('float32') / 255.0
                     # if model expects shape (None, H, W, 1) expand channel dim
-                    # detect whether model expects 3- or 4-D input by checking fer_model.input_shape len
+                    # detect whether model expects 3- or 4-D input by checking Emo.input_shape len
                     ishape = getattr(fer_model, 'input_shape', None)
                     if ishape is None and hasattr(fer_model, 'inputs'):
                         try:
