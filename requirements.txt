@@ -1,4 +1,3 @@
-flask
 streamlit
 streamlit-webrtc
 av
@@ -9,3 +8,15 @@ joblib
 tensorflow
 scikit-learn
 matplotlib
+flask
+flask-cors
+opencv-python
+numpy
+sounddevice
+vosk
+pyttsx3
+ollama
+librosa
+joblib
+tensorflow
+scikit-learn
