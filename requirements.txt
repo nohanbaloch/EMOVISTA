@@ -10,13 +10,8 @@ scikit-learn
 matplotlib
 flask
 flask-cors
-opencv-python
-numpy
 sounddevice
 vosk
 pyttsx3
 ollama
-librosa
-joblib
-tensorflow
-scikit-learn
+customtkinter
