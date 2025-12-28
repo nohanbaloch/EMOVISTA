@@ -20,8 +20,8 @@ BASE = Path(__file__).resolve().parents[2]
 
 # prefer Keras native format but fall back to legacy HDF5 for compatibility
 FER_MODEL_PATHS = [
-    BASE / 'models' / 'fer_model.keras',
-    BASE / 'models' / 'fer_model.h5',
+    BASE / 'models' / 'fer_model' / 'fer_model.keras',
+    BASE / 'models' / 'fer_model' / 'fer_model.h5',
 ]
 SPEECH_MODEL_PATHS = [
     BASE / 'models' / 'speech_model' / 'speech_model.keras',

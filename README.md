@@ -85,7 +85,7 @@ EMOVISTA requires pre-trained models. Place them in the `models/` directory:
 - **FER**: `models/fer_model.h5` or `.keras`
 - **Speech**: `models/speech_model/`
 - **Text**: `models/text_model.pkl` & `vectorizer.pkl`
-- **Vosk**: Download a small English model from [Vosk Models](https://alphacephei.com/vosk/models) and unzip to `models/vosk/`
+- **Vosk**: Download a small English model (e.g., `vosk-model-en-us-0.22`) from [Vosk Models](https://alphacephei.com/vosk/models) and unzip to `models/vosk/`
 
 ---
 
