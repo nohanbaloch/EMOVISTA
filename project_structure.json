@@ -1,0 +1,118 @@
+{
+    "README.md": "file",
+    "WARP.md": "file",
+    "app.py": "file",
+    "folder_structure_to_json.py": "file",
+    "models": {
+        "Fer_model": {
+            "fer_model.h5": "file",
+            "fer_model.keras": "file",
+            "report_and_log": {
+                "fer_history.json": "file",
+                "fer_history.png": "file",
+                "fer_report.txt": "file",
+                "fer_training.csv": "file",
+                "logs": {
+                    "train": {
+                        "events.out.tfevents.1764615897.DESKTOP-E48IV69.3984.0.v2": "file",
+                        "events.out.tfevents.1764617234.DESKTOP-E48IV69.3984.2.v2": "file",
+                        "events.out.tfevents.1764624084.DESKTOP-E48IV69.15644.0.v2": "file",
+                        "events.out.tfevents.1764626469.DESKTOP-E48IV69.15644.2.v2": "file",
+                        "events.out.tfevents.1764694744.DESKTOP-E48IV69.20624.0.v2": "file",
+                        "events.out.tfevents.1764698196.DESKTOP-E48IV69.20624.2.v2": "file",
+                        "events.out.tfevents.1765118268.DESKTOP-E48IV69.4216.0.v2": "file"
+                    },
+                    "validation": {
+                        "events.out.tfevents.1764616010.DESKTOP-E48IV69.3984.1.v2": "file",
+                        "events.out.tfevents.1764617378.DESKTOP-E48IV69.3984.3.v2": "file",
+                        "events.out.tfevents.1764624203.DESKTOP-E48IV69.15644.1.v2": "file",
+                        "events.out.tfevents.1764626653.DESKTOP-E48IV69.15644.3.v2": "file",
+                        "events.out.tfevents.1764694880.DESKTOP-E48IV69.20624.1.v2": "file",
+                        "events.out.tfevents.1764698403.DESKTOP-E48IV69.20624.3.v2": "file",
+                        "events.out.tfevents.1765118631.DESKTOP-E48IV69.4216.1.v2": "file"
+                    }
+                }
+            }
+        },
+        "fusion_model": {
+            "fusion_model.keras": "file"
+        },
+        "speech_model": {
+            "report_and_log": {
+                "speech_training.log": "file",
+                "speech_training_history.csv": "file",
+                "speech_training_history.png": "file",
+                "speech_training_report.json": "file",
+                "speech_training_report.txt": "file"
+            },
+            "speech_label_encoder.pkl": "file",
+            "speech_model.keras": "file"
+        },
+        "text_model": {
+            "label_encoder.pkl": "file",
+            "report_and_log": {
+                "text_training.log": "file",
+                "text_training_report.json": "file",
+                "text_training_report.txt": "file"
+            },
+            "text_model.keras": "file",
+            "vectorizer.pkl": "file"
+        }
+    },
+    "project_structure.json": "file",
+    "requirements.txt": "file",
+    "setup.py": "file",
+    "src": {
+        "__init__.py": "file",
+        "__pycache__": {
+            "__init__.cpython-313.pyc": "file",
+            "main.cpython-313.pyc": "file"
+        },
+        "fer": {
+            "__pycache__": {
+                "train_fer.cpython-313.pyc": "file"
+            },
+            "train_fer.py": "file",
+            "train_fer_fixed.py": "file"
+        },
+        "fusion": {
+            "__init__.py": "file",
+            "__pycache__": {
+                "__init__.cpython-313.pyc": "file",
+                "emotion_fusion.cpython-313.pyc": "file"
+            },
+            "emotion_fusion.py": "file",
+            "emotion_fusion_fixed.py": "file",
+            "severity_engine.py": "file",
+            "train_meta.py": "file"
+        },
+        "gui": {
+            "__pycache__": {
+                "main_gui.cpython-313.pyc": "file"
+            },
+            "main_gui.py": "file"
+        },
+        "main.py": "file",
+        "memory": {
+            "crypto_utils.py": "file",
+            "patient_memory.py": "file"
+        },
+        "speech": {
+            "__pycache__": {
+                "train_speech_cremad.cpython-313.pyc": "file"
+            },
+            "speech_model.py": "file",
+            "train_speech_cremad.py": "file"
+        },
+        "text": {
+            "train_text.py": "file"
+        },
+        "web": {}
+    },
+    "tests": {
+        "__pycache__": {
+            "test_fusion.cpython-313-pytest-9.0.1.pyc": "file"
+        },
+        "test_fusion.py": "file"
+    }
+}

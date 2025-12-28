@@ -1,4 +1,3 @@
-*
 /.github/
 /.venv/
 /.vscode/
@@ -6,6 +5,13 @@
 /folder_structure.json/
 /folder_structure_to_json.py/
 /WARP.md/
+/src/__init__.py/
 /.antigravityignore/
 /models/vosk/vosk-model-en-us-0.22/
 /generate_presentation.py/
+/EMOVISTA_Presentation.pptx/
+/models/Fer_model/report_and_log/
+/models/speech_model/report_and_log/
+/models/text_model/report_and_log/
+/models/image_model/report_and_log/
+/src/web/backend/__pycache__/

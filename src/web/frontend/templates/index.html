@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EMOVISTA – Medical Emotion Assistant</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <div class="header-left">
+          <div class="logo">
+            <span class="logo-text">EMOVISTA</span>
+            <span class="logo-sub">Medical Emotion Assistant</span>
+          </div>
+        </div>
+
+        <div class="webcam-container">
+          <video id="webcam" autoplay playsinline muted></video>
+          <div class="scan-overlay"></div>
+        </div>
+
+        <div class="emotion-badge" id="emotion-display">
+          <span class="emotion-label">Detected Emotion</span>
+          <span class="emotion-value" id="emotion">Waiting...</span>
+        </div>
+      </header>
+
+      <main class="chat-interface">
+        <div id="chat" class="chat-history">
+          <div class="message assistant-message">
+            <div class="message-content">
+              Hello. I am your Medical Emotion Assistant. How can I help you
+              today?
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="input-area">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="user-input"
+            placeholder="Type a message..."
+            onkeypress="handleKeyPress(event)"
+          />
+
+          <button
+            id="send-btn"
+            class="icon-button send-btn"
+            onclick="sendMessage()"
+            title="Send Message"
+          >
+            <span class="icon">➤</span>
+          </button>
+
+          <button
+            id="talk-btn"
+            class="icon-button mic-btn"
+            onclick="talk()"
+            title="Voice Input"
+          >
+            <span class="icon">🎙️</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
