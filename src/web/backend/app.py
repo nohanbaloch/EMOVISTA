@@ -47,7 +47,7 @@ STATIC_DIR = os.path.join(FRONTEND_DIR, 'static')
 TEMPLATE_PATH = os.path.join(FRONTEND_DIR, 'templates', 'index.html')
 
 MODELS_DIR = os.path.join(str(PROJECT_ROOT), 'models')
-VOSK_MODEL_PATH = os.path.join(MODELS_DIR, 'vosk', 'vosk-model-en-us-0.22')
+VOSK_MODEL_PATH = os.path.join(MODELS_DIR, 'vosk', 'vosk-model-small-en-us-0.15')
 
 logger.info(f"Project Root: {PROJECT_ROOT}")
 logger.info(f"Models Dir: {MODELS_DIR}")

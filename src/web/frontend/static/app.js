@@ -148,25 +148,82 @@ async function processUserIntent(text) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let assistantText = "";
+    let ttsBuffer = "";
 
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
       const chunk = decoder.decode(value, { stream: true });
       assistantText += chunk;
+      ttsBuffer += chunk;
+      
       assistantContentNode.textContent = assistantText;
       
       // Auto-scroll to bottom of chat
       const chatInterface = document.querySelector(".chat-interface");
       chatInterface.scrollTop = chatInterface.scrollHeight;
-    }
 
-    // 4. TTS: Speak response (optional)
-    await fetch("/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: assistantText })
-    });
+      // Check for complete sentences in buffer to stream TTS
+      // Match sentences ending with . ! ? or newline
+      let match = ttsBuffer.match(/.+?([.!?\n]|$)\s*/); 
+      // Actually, we want to be careful not to match partials if checks "|$" at end of string which is always true.
+      // Better regex: match any sequence ending in punctuation.
+      // We look for content followed by punctuation, non-greedy.
+      // But we must assume if we don't find punctuation, we wait for next chunk. 
+      // So we only strip if we find punctuation.
+      
+      let sentenceMatch = ttsBuffer.match(/(.*?[.!?\n])\s+/);
+      // The \s+ ensures we have a break after the sentence (or end of chunk space), 
+      // helping avoid splitting "Mr. Smith" if "Mr." was matched? No, simplistic is robust enough for now.
+      // Let's stick to simple: split by [.!?\n]
+      
+      // Let's use a simpler loop with index checking
+      let puncIndex = -1;
+      const puncs = ['.', '!', '?', '\n'];
+      
+      // Find first punctuation
+      for(let p of puncs) {
+          let idx = ttsBuffer.indexOf(p);
+          if (idx !== -1 && (puncIndex === -1 || idx < puncIndex)) {
+             puncIndex = idx;
+          }
+      }
+
+      if (puncIndex !== -1) {
+          // We found a sentence end. 
+          // Extract it including the punctuation.
+          // Wait, if "Mr." case? 
+          // For a simple assistant, "stop at dot" is 90% okay.
+          
+          // Actually, let's use a regex loop to find all minimal sentences
+          while (true) {
+              const result = ttsBuffer.match(/(.*?[.!?\n])/);
+              if (!result) break;
+              
+              const sentence = result[0];
+              // Send to TTS (Fire & Forget)
+              if (sentence.trim().length > 0) {
+                 fetch("/tts", {
+                   method: "POST",
+                   headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({ text: sentence })
+                 }).catch(e => console.error("TTS Error", e));
+              }
+
+              // Remove from buffer
+              ttsBuffer = ttsBuffer.substring(result.index + sentence.length);
+          }
+      }
+    }
+    
+    // Flush remaining buffer
+    if (ttsBuffer.trim().length > 0) {
+        fetch("/tts", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ text: ttsBuffer })
+        }).catch(e => console.error("TTS Error", e));
+    }
     
   } catch (error) {
     console.error("Processing Error:", error);
