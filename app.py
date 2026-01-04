@@ -14,14 +14,19 @@ import logging
 from pathlib import Path
 
 # --- Path Setup for Fusion ---
-# Current file: src/web/backend/app.py
-# We need 'src' in sys.path to import 'fusion'
+# Current file: app.py (moved to project root)
+# We need 'src' in sys.path to import 'fusion' and 'web.backend' modules
 CURRENT_FILE = Path(__file__).resolve()
-SRC_DIR_PATH = CURRENT_FILE.parents[2] # src/web/backend -> src/web -> src
-PROJECT_ROOT = CURRENT_FILE.parents[3] # src -> Project Root
+PROJECT_ROOT = CURRENT_FILE.parent  # Project root
+SRC_DIR_PATH = PROJECT_ROOT / 'src'
 
 if str(SRC_DIR_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_DIR_PATH))
+
+# Also add backend path for direct imports
+BACKEND_DIR_PATH = SRC_DIR_PATH / 'web' / 'backend'
+if str(BACKEND_DIR_PATH) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR_PATH))
 
 try:
     from fusion.emotion_fusion import load_all, fuse, fer_labels
@@ -31,18 +36,17 @@ except ImportError as e:
     pass
 
 # Assuming these modules are available in your environment
-from llm_phi3 import Phi3Assistant
-from stt_vosk import VoskSTT
-from tts import speak
+from src.web.backend.llm_phi3 import Phi3Assistant
+from src.web.backend.stt_vosk import VoskSTT
+from src.web.backend.tts import speak
 
 # --- Logging setup ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('web_backend')
 
 # Calculate paths relative to this file
-BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
-WEB_DIR = os.path.dirname(BACKEND_DIR)
-FRONTEND_DIR = os.path.join(WEB_DIR, 'frontend')
+WEB_DIR = str(SRC_DIR_PATH / 'web')
+FRONTEND_DIR = str(SRC_DIR_PATH / 'web' / 'frontend')
 STATIC_DIR = os.path.join(FRONTEND_DIR, 'static')
 TEMPLATE_PATH = os.path.join(FRONTEND_DIR, 'templates', 'index.html')
 
@@ -230,14 +234,53 @@ def consult():
     logger.info(f"Frontend Emotion: {emotion} | Text: {text} | Fused: {fused_label}")
 
     def generate():
+        import re
+        buffer = ""
+        sentence_endings = re.compile(r'[.!?\n]')
+
         for token in assistant.respond(fused_label, text):
+            buffer += token
             yield token
+            
+            # Check for sentence endings
+            if sentence_endings.search(buffer):
+                # Split by endings to get complete sentences
+                # We want to keep the delimiters
+                parts = sentence_endings.split(buffer)
+                
+                # Reconstruct sentences with their delimiters
+                # The split list will look like [sent1, '', sent2, '', rest] if delimiters are consumed, 
+                # but with simple split we lose them. 
+                # Better approach: Find matches and slice.
+                
+                # Re-do with a simpler logic: check if the buffer *ends* with a sentence terminator 
+                # or contains one. We want to speak safe chunks.
+                
+                # Let's find the last valid sentence ending
+                matches = list(sentence_endings.finditer(buffer))
+                if matches:
+                    last_match = matches[-1]
+                    end_pos = last_match.end()
+                    
+                    to_speak = buffer[:end_pos].strip()
+                    remaining = buffer[end_pos:]
+                    
+                    if to_speak:
+                        speak(to_speak)
+                    
+                    buffer = remaining
+
+        # Speak any remaining text
+        if buffer.strip():
+            speak(buffer.strip())
 
     return Response(generate(), mimetype="text/plain")
 
 @app.route("/tts", methods=["POST"])
 def tts_route():
-    speak(request.json.get("text", ""))
+    text = request.json.get("text", "")
+    logger.info(f"TTS Request Received: {text[:30]}...")
+    speak(text)
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
@@ -250,4 +293,5 @@ if __name__ == "__main__":
          except Exception as e:
             logger.error(f"Startup Speech Error: {e}")
 
-    app.run(debug=True, port=5000)
+    # Ensure threaded is True to handle /consult stream and /tts concurrently
+    app.run(debug=True, port=5000, threaded=True)

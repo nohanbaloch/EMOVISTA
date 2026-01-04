@@ -18,7 +18,13 @@ The core of EMOVISTA is its intelligent fusion engine (`src/fusion/emotion_fusio
 
 The system uses a **weighted voting mechanism** by default but supports a **Learned Fusion Model** for higher accuracy if trained.
 
-### 2. Medical & Safety Modules
+### 2. Intelligent AI Assistant (New!)
+
+- **Local LLM**: Powered by **Phi-3 Mini** (via Ollama) for intelligent, context-aware conversations without sending data to the cloud.
+- **Streaming TTS**: Features a real-time **Text-to-Speech** engine that speaks responses as they are generated, providing a natural conversational flow.
+- **Voice Interaction**: Full voice-to-voice capability using **Vosk** for offline speech recognition.
+
+### 3. Medical & Safety Modules
 
 EMOVISTA is equipped with features tailored for therapeutic and medical monitoring:
 
@@ -27,7 +33,7 @@ EMOVISTA is equipped with features tailored for therapeutic and medical monitori
 - **Emergency Escalation**: Automatically flags high-risk states (e.g., prolonged distress) to trigger alerts.
 - **Trend Analysis**: Tracks emotional trajectories over time to aid in diagnosis or progress monitoring.
 
-### 3. Dual Interfaces
+### 4. Dual Interfaces
 
 - **Desktop Application**: A high-performance GUI built with **CustomTkinter** for local, low-latency interaction.
 - **Web Dashboard**: A **Flask**-based web server for remote monitoring or lightweight access.
@@ -45,17 +51,18 @@ EMOVISTA/
 │   ├── text_model.pkl      # Text Analysis Model
 │   └── vosk/               # Offline Speech-to-Text Model
 ├── src/
-│   ├── main.py             # ENTRY POINT: Desktop Application
+│   ├── customtkinter-main.py # ENTRY POINT: Desktop Application
 │   ├── web/
-│   │   └── backend/app.py  # ENTRY POINT: Web Application
+│   │   └── frontend/       # Web Assets (HTML/CSS/JS)
 │   ├── fusion/             # Fusion logic (Weighted & Learned)
-│   ├── memory/             # Encrypted patient history usage
+│   ├── memory/             # Encrypted patient memory
 │   ├── analytics/          # Trend analysis algorithms
 │   ├── safety/             # Emergency escalation logic
 │   ├── voice/              # TTS and Audio processing
 │   ├── fer/                # Face detection & processing
 │   ├── speech/             # Audio feature extraction
 │   └── text/               # NLP & Sentiment logic
+├── app.py                  # ENTRY POINT: Web Application & API
 ├── requirements.txt        # Python dependencies
 └── README.md               # Documentation
 ```
@@ -96,7 +103,7 @@ EMOVISTA requires pre-trained models. Place them in the `models/` directory:
 Launch the full-featured GUI for the best experience (real-time video feedback, interactive charts).
 
 ```bash
-python src/main.py
+python src/customtkinter-main.py
 ```
 
 **Controls**:
@@ -109,7 +116,7 @@ python src/main.py
 Start the Flask server to access the web interface.
 
 ```bash
-python src/web/backend/app.py
+python app.py
 ```
 
 Access the dashboard at: `http://localhost:5000`
