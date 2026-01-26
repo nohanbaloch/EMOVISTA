@@ -294,4 +294,4 @@ if __name__ == "__main__":
             logger.error(f"Startup Speech Error: {e}")
 
     # Ensure threaded is True to handle /consult stream and /tts concurrently
-    app.run(debug=True, port=5000, threaded=True)
+    app.run(debug=True, port=5000, threaded=True, use_reloader=False)

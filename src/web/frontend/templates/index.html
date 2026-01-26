@@ -1,8 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="EMOVISTA - Medical-grade emotion analysis assistant for healthcare professionals"
+    />
     <title>EMOVISTA – Medical Emotion Assistant</title>
     <link rel="stylesheet" href="/static/style.css" />
   </head>
@@ -22,8 +26,8 @@
         </div>
 
         <div class="emotion-badge" id="emotion-display">
-          <span class="emotion-label">Detected Emotion</span>
-          <span class="emotion-value" id="emotion">Waiting...</span>
+          <span class="emotion-label">Current Emotional State</span>
+          <span class="emotion-value" id="emotion">Initializing...</span>
         </div>
       </header>
 
@@ -31,8 +35,18 @@
         <div id="chat" class="chat-history">
           <div class="message assistant-message">
             <div class="message-content">
-              Hello. I am your Medical Emotion Assistant. How can I help you
-              today?
+              Hello. I am your Medical Emotion Assistant. I'm here to listen and
+              provide support. How are you feeling today?
+            </div>
+          </div>
+          <div class="message assistant-message">
+            <div
+              class="message-content"
+              style="font-size: 0.85rem; opacity: 0.7; font-style: italic"
+            >
+              Note: This system provides emotional support only. It does not
+              diagnose medical conditions. For medical emergencies, contact your
+              healthcare provider.
             </div>
           </div>
         </div>
@@ -43,8 +57,9 @@
           <input
             type="text"
             id="user-input"
-            placeholder="Type a message..."
+            placeholder="Share your thoughts..."
             onkeypress="handleKeyPress(event)"
+            aria-label="Message input"
           />
 
           <button
@@ -52,8 +67,20 @@
             class="icon-button send-btn"
             onclick="sendMessage()"
             title="Send Message"
+            aria-label="Send message"
           >
-            <span class="icon">➤</span>
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
           </button>
 
           <button
@@ -61,8 +88,24 @@
             class="icon-button mic-btn"
             onclick="talk()"
             title="Voice Input"
+            aria-label="Voice input"
           >
-            <span class="icon">🎙️</span>
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+              ></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
           </button>
         </div>
       </footer>

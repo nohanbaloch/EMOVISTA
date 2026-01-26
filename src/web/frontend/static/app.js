@@ -44,18 +44,18 @@ async function analyzeFace() {
       const emotionEl = document.getElementById('emotion');
       emotionEl.textContent = currentEmotion;
       
-      // Update color based on emotion
+      // Medical-grade emotion color mapping
       const emotionColors = {
-        "Angry": "#ef4444",   // Red
-        "Disgust": "#84cc16", // Lime Green
-        "Fear": "#a855f7",    // Purple
-        "Happy": "#22c55e",   // Green
-        "Sad": "#3b82f6",     // Blue
-        "Surprise": "#eab308",// Yellow
-        "Neutral": "#94a3b8"  // Gray
+        "Angry": "#f87171",    // Muted Red (not pure red)
+        "Disgust": "#94a3b8",  // Slate Gray
+        "Fear": "#a78bfa",     // Desaturated Purple
+        "Happy": "#34d399",    // Soft Green
+        "Sad": "#a78bfa",      // Desaturated Purple
+        "Surprise": "#fbbf24", // Amber
+        "Neutral": "#94a3b8"   // Slate
       };
       
-      emotionEl.style.color = emotionColors[currentEmotion] || "var(--accent-color)";
+      emotionEl.style.color = emotionColors[currentEmotion] || "#4fd1c5";
     }
   } catch (e) {
     console.error("Face analysis failed", e);
@@ -81,11 +81,9 @@ async function sendMessage() {
 
 async function talk() {
   const talkBtn = document.getElementById("talk-btn");
-  const talkIcon = talkBtn.querySelector(".icon");
 
   // Visual Feedback: Listening State
   talkBtn.classList.add("listening");
-  talkIcon.textContent = "👂";
   talkBtn.disabled = true;
 
   try {
@@ -97,7 +95,6 @@ async function talk() {
 
     // Reset Button State
     talkBtn.classList.remove("listening");
-    talkIcon.textContent = "🎙️";
     talkBtn.disabled = false;
 
     if (text) {
@@ -119,7 +116,6 @@ async function talk() {
     
     // Reset Button State on Error
     talkBtn.classList.remove("listening");
-    talkIcon.textContent = "🎙️";
     talkBtn.disabled = false;
   }
 }
