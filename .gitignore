@@ -2,6 +2,7 @@
 /.vs/
 /.github/
 /env/
+/venv/
 /.vscode/
 /data/
 /folder_structure.json/

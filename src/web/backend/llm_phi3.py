@@ -1,18 +1,19 @@
 import ollama
 import json
 import os
+from typing import Any, Iterator, Mapping, cast
 
 def load_system_prompt():
     config_path = os.path.join(os.path.dirname(__file__), "persona_config.json")
     try:
         with open(config_path, "r") as f:
-            c = json.load(f)
+            c = cast(dict[str, Any], json.load(f))
             
         # Extract nested configuration
-        comm = c.get('communication', {})
+        comm = cast(dict[str, Any], c.get('communication', {}))
         tone = ", ".join(comm.get('tone', ['Calm', 'Professional']))
         
-        style_cfg = comm.get('style', {})
+        style_cfg = cast(dict[str, Any], comm.get('style', {}))
         length_pref = style_cfg.get('sentence_length', 'short')
         
         # Force strict length constraints
@@ -25,26 +26,26 @@ def load_system_prompt():
         style = f"Level: {style_cfg.get('language_level', 'Simple')}. {length_instruction}"
         
         # New Sections
-        emergency = c.get('emergency_resources', {})
-        boundaries = c.get('topic_boundaries', {})
-        coping = c.get('coping_mechanisms_library', {})
+        emergency = cast(dict[str, Any], c.get('emergency_resources', {}))
+        boundaries = cast(dict[str, Any], c.get('topic_boundaries', {}))
+        coping = cast(dict[str, Any], c.get('coping_mechanisms_library', {}))
         
         # Combine instructions
-        rules = []
+        rules: list[str] = []
         rules.append(f"Global Disclaimer: {emergency.get('global_disclaimer', '')}")
-        rules.extend(c.get('intended_use', []))
-        rules.extend(comm.get('response_guidelines', []))
-        rules.extend(c.get('medical_guidance_rules', []))
+        rules.extend([str(item) for item in c.get('intended_use', [])])
+        rules.extend([str(item) for item in comm.get('response_guidelines', [])])
+        rules.extend([str(item) for item in c.get('medical_guidance_rules', [])])
         
         # Add Boundary Rules
         if boundaries:
-             rules.append(f"Refuse topics: {', '.join(boundaries.get('refusal_topics', []))}")
-             rules.append(f"Refusal phrase: '{boundaries.get('refusal_template', '')}'")
+                        rules.append(f"Refuse topics: {', '.join([str(item) for item in boundaries.get('refusal_topics', [])])}")
+                        rules.append(f"Refusal phrase: '{boundaries.get('refusal_template', '')}'")
 
         instructions = "\n".join([f"- {r}" for r in rules])
         
         # Emergency Context
-        hotlines = emergency.get('us_hotlines', {})
+        hotlines = cast(dict[str, Any], emergency.get('us_hotlines', {}))
         emergency_text = f"Emergency Hotlines: Suicide={hotlines.get('suicide_prevention')}, Emergency={hotlines.get('emergency')}"
 
         return f"""
@@ -74,12 +75,40 @@ You encourage professional help when needed.
 
 SYSTEM_PROMPT = load_system_prompt()
 
+
+def list_ollama_models() -> list[str]:
+    """Return installed Ollama model names in a robust, version-tolerant way."""
+    names: list[str] = []
+    try:
+        response = ollama.list()
+        models_obj = response.get("models", []) if isinstance(response, dict) else getattr(response, "models", [])
+
+        for item in models_obj:
+            name: str | None = None
+            if isinstance(item, dict):
+                raw = item.get("model") or item.get("name")
+                name = str(raw) if raw else None
+            else:
+                raw = getattr(item, "model", None) or getattr(item, "name", None)
+                name = str(raw) if raw else None
+
+            if name:
+                names.append(name)
+    except Exception:
+        return ["phi3"]
+
+    # Preserve order while de-duplicating.
+    deduped = list(dict.fromkeys(names))
+    return deduped if deduped else ["phi3"]
+
 class Phi3Assistant:
-    def __init__(self, model="phi3"):
+    def __init__(self, model: str = "phi3"):
         self.model = model
         self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    def respond(self, emotion, user_text):
+    def respond(self, emotion: str, user_text: str, model: str | None = None):
+        selected_model = (model or self.model).strip() or self.model
+
         prompt = f"""
 Detected emotion: {emotion}
 User says: {user_text}
@@ -88,11 +117,11 @@ Respond empathetically and medically responsibly.
 """
         self.messages.append({"role": "user", "content": prompt})
 
-        stream = ollama.chat(
-            model=self.model,
+        stream = cast(Iterator[Mapping[str, Any]], ollama.chat(
+            model=selected_model,
             messages=self.messages,
             stream=True
-        )
+        ))
 
         full_reply = ""
         for chunk in stream:

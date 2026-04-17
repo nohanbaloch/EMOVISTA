@@ -1,11 +1,53 @@
 // Global variable to store detected emotion
 let currentEmotion = "Neutral";
+let selectedModel = "phi3";
 
 window.onload = function() {
+  initializeModelSelector();
   startWebcam();
   // Start analyzing face every 2 seconds
   setInterval(analyzeFace, 2000);
 };
+
+async function initializeModelSelector() {
+  const modelSelect = document.getElementById("model-select");
+  if (!modelSelect) return;
+
+  modelSelect.addEventListener("change", (event) => {
+    const target = event.target;
+    if (target && target.value) {
+      selectedModel = target.value;
+    }
+  });
+
+  try {
+    const response = await fetch("/ollama_models");
+    if (!response.ok) throw new Error("Failed to load models");
+
+    const payload = await response.json();
+    const models = Array.isArray(payload.models) ? payload.models : ["phi3"];
+    const defaultModel = typeof payload.default === "string" && payload.default
+      ? payload.default
+      : (models[0] || "phi3");
+
+    modelSelect.innerHTML = "";
+    models.forEach((modelName) => {
+      const option = document.createElement("option");
+      option.value = modelName;
+      option.textContent = modelName;
+      modelSelect.appendChild(option);
+    });
+
+    const hasDefault = models.includes(defaultModel);
+    selectedModel = hasDefault ? defaultModel : (models[0] || "phi3");
+    modelSelect.value = selectedModel;
+  } catch (error) {
+    console.error("Unable to load Ollama models:", error);
+    modelSelect.innerHTML = '<option value="phi3">phi3</option>';
+    selectedModel = "phi3";
+    modelSelect.value = selectedModel;
+  }
+}
 
 async function startWebcam() {
   const video = document.getElementById('webcam');
@@ -131,7 +173,8 @@ async function processUserIntent(text) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         emotion: currentEmotion, 
-        text: text
+        text: text,
+        model: selectedModel
       })
     });
 

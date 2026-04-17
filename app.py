@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import os
 import sys
+from typing import Any, Callable, Sequence, cast
 
 # Suppress TensorFlow logs (must be before importing tf)
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
@@ -13,9 +14,8 @@ import numpy as np
 import logging
 from pathlib import Path
 
-# --- Path Setup for Fusion ---
-# Current file: app.py (moved to project root)
-# We need 'src' in sys.path to import 'fusion' and 'web.backend' modules
+# --- Path Setup ---
+# Current file: app.py (project root)
 CURRENT_FILE = Path(__file__).resolve()
 PROJECT_ROOT = CURRENT_FILE.parent  # Project root
 SRC_DIR_PATH = PROJECT_ROOT / 'src'
@@ -23,26 +23,47 @@ SRC_DIR_PATH = PROJECT_ROOT / 'src'
 if str(SRC_DIR_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_DIR_PATH))
 
-# Also add backend path for direct imports
-BACKEND_DIR_PATH = SRC_DIR_PATH / 'web' / 'backend'
-if str(BACKEND_DIR_PATH) not in sys.path:
-    sys.path.insert(0, str(BACKEND_DIR_PATH))
+# Sensible defaults so names are always bound even if fusion import fails.
+fer_labels: list[str] = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+
+
+def _fallback_load_all() -> tuple[Any, Any, Any, Any, Any]:
+    return (None, None, None, None, None)
+
+
+def _fallback_fuse(
+    fer_pred: Any,
+    speech_pred: Any,
+    speech_encoder: Any,
+    text_pred: Any,
+) -> tuple[str, np.ndarray[Any, Any]]:
+    scores = np.zeros(len(fer_labels), dtype=np.float32)
+    neutral_index = fer_labels.index('Neutral') if 'Neutral' in fer_labels else 0
+    scores[neutral_index] = 1.0
+    return ('Neutral', scores)
+
+
+load_all: Callable[[], tuple[Any, Any, Any, Any, Any]] = _fallback_load_all
+fuse: Callable[[Any, Any, Any, Any], tuple[str, np.ndarray[Any, Any]]] = _fallback_fuse
 
 try:
-    from fusion.emotion_fusion import load_all, fuse, fer_labels
-except ImportError as e:
-    print(f"Error importing fusion: {e}. Make sure 'src' is in python path.")
-    # Fallback/Warnings will happen later if modules missing
-    pass
+    import src.fusion.emotion_fusion as fusion_module
 
-# Assuming these modules are available in your environment
-from src.web.backend.llm_phi3 import Phi3Assistant
+    load_all = cast(Callable[[], tuple[Any, Any, Any, Any, Any]], getattr(fusion_module, 'load_all'))
+    fuse = cast(Callable[[Any, Any, Any, Any], tuple[str, np.ndarray[Any, Any]]], getattr(fusion_module, 'fuse'))
+    fer_labels = list(cast(Sequence[str], getattr(fusion_module, 'fer_labels')))
+except Exception as e:
+    logger = logging.getLogger('web_backend')
+    logger.warning("Fusion import failed, using fallback behavior: %s", e)
+
+from src.web.backend.llm_phi3 import Phi3Assistant, list_ollama_models
 from src.web.backend.stt_vosk import VoskSTT
-from src.web.backend.tts import speak
+import src.web.backend.tts as tts_module
 
 # --- Logging setup ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('web_backend')
+speak: Callable[[str], None] = cast(Callable[[str], None], getattr(tts_module, 'speak'))
 
 # Calculate paths relative to this file
 WEB_DIR = str(SRC_DIR_PATH / 'web')
@@ -83,7 +104,7 @@ else:
     logger.warning("FER Model NOT Loaded.")
 
 # Helper: Determine FER input spec
-def _get_fer_input_spec(model):
+def _get_fer_input_spec(model: Any) -> tuple[int, int, int | None] | None:
     if model is None:
         return None
     try:
@@ -120,36 +141,50 @@ def speech_to_text():
         text = "STT unavailable"
     return jsonify({"text": text})
 
+
+@app.route("/ollama_models", methods=["GET"])
+def ollama_models():
+    try:
+        models = list_ollama_models()
+        return jsonify({"models": models, "default": assistant.model})
+    except Exception as e:
+        logger.error(f"Failed to list Ollama models: {e}")
+        return jsonify({"models": [assistant.model], "default": assistant.model})
+
 @app.route("/analyze_face", methods=["POST"])
 def analyze_face():
     """Receives a base64 encoded image frame and returns the detected emotion."""
     try:
-        data = request.json
-        image_data = data.get("image")
+        payload_raw = request.get_json(silent=True)
+        data: dict[str, Any] = cast(dict[str, Any], payload_raw) if isinstance(payload_raw, dict) else {}
+        image_data_raw = data.get("image")
+        image_data = image_data_raw if isinstance(image_data_raw, str) else ""
         
         if not image_data:
             return jsonify({"error": "No image data"}), 400
 
         # Decode base64
         if "," in image_data:
-            header, encoded = image_data.split(",", 1)
+            _, encoded = image_data.split(",", 1)
         else:
             encoded = image_data
 
         decoded_data = base64.b64decode(encoded)
         np_data = np.frombuffer(decoded_data, np.uint8)
         frame = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+        if frame is None:
+            return jsonify({"error": "Invalid image data"}), 400
 
         if fer_model is None:
             return jsonify({"emotion": "Model Not Loaded"})
 
         # Face Detection
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        cascade_path = os.path.join(cv2.__path__[0], 'data', 'haarcascade_frontalface_default.xml')
+        face_cascade = cv2.CascadeClassifier(cascade_path)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
         fer_pred = None
-        label_text = "Neutral"
 
         # Process first face found (simplification for web)
         if len(faces) > 0:
@@ -162,7 +197,6 @@ def analyze_face():
                 target_h, target_w, target_c = 96, 96, 3
             else:
                 target_h, target_w, target_c = spec
-                if target_h is None: target_h, target_w = 96, 96
             
             roi_resized = cv2.resize(roi_color, (target_w, target_h))
 
@@ -174,8 +208,10 @@ def analyze_face():
                 # Expand dims based on model expectation
                 ishape = getattr(fer_model, 'input_shape', None)
                 if ishape is None and hasattr(fer_model, 'inputs'):
-                     try: ishape = tuple(fer_model.inputs[0].shape.as_list())
-                     except: ishape = None
+                    try:
+                        ishape = tuple(fer_model.inputs[0].shape.as_list())
+                    except Exception:
+                        ishape = None
                 
                 if ishape is not None and len(ishape) == 4:
                     roi_input = np.expand_dims(roi_proc, axis=(0, -1))
@@ -192,7 +228,7 @@ def analyze_face():
         
         # Fuse (Currently only FER provided from this endpoint)
         # Note: 'fuse' handles None for other modalities
-        fused_label, combined_scores = fuse(fer_pred, None, speech_le, None)
+        fused_label, _combined_scores = fuse(fer_pred, None, speech_le, None)
         
         return jsonify({"emotion": fused_label})
 
@@ -202,9 +238,11 @@ def analyze_face():
 
 @app.route("/consult", methods=["POST"])
 def consult():
-    data = request.json
-    emotion = data.get("emotion", "Neutral") 
-    text = data.get("text", "")
+    payload_raw = request.get_json(silent=True)
+    data: dict[str, Any] = cast(dict[str, Any], payload_raw) if isinstance(payload_raw, dict) else {}
+    emotion = str(data.get("emotion", "Neutral"))
+    text = str(data.get("text", ""))
+    model_name = str(data.get("model", assistant.model)).strip() or assistant.model
 
     # Text Emotion Analysis
     text_pred = None
@@ -229,25 +267,25 @@ def consult():
             fer_pred_vector[fer_labels.index("Neutral")] = 1.0
     
     # Fuse (Speech component is None here as we only have Text + Face)
-    fused_label, combined_scores = fuse(fer_pred_vector, None, speech_le, text_pred)
+    fused_label, _combined_scores = fuse(fer_pred_vector, None, speech_le, text_pred)
     
-    logger.info(f"Frontend Emotion: {emotion} | Text: {text} | Fused: {fused_label}")
+    logger.info(f"Frontend Emotion: {emotion} | Text: {text} | Model: {model_name} | Fused: {fused_label}")
 
     def generate():
         import re
         buffer = ""
         sentence_endings = re.compile(r'[.!?\n]')
 
-        for token in assistant.respond(fused_label, text):
-            buffer += token
-            yield token
+        respond_fn = cast(Callable[[str, str, str], Any], getattr(assistant, 'respond'))
+        for token in respond_fn(fused_label, text, model_name):
+            token_str = str(token)
+            buffer += token_str
+            yield token_str
             
             # Check for sentence endings
             if sentence_endings.search(buffer):
                 # Split by endings to get complete sentences
                 # We want to keep the delimiters
-                parts = sentence_endings.split(buffer)
-                
                 # Reconstruct sentences with their delimiters
                 # The split list will look like [sent1, '', sent2, '', rest] if delimiters are consumed, 
                 # but with simple split we lose them. 
