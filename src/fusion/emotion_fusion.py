@@ -11,7 +11,10 @@ except Exception:
 try:
     from tensorflow.keras.models import load_model  # type: ignore
 except Exception:
-    load_model = None
+    try:
+        from keras.models import load_model  # type: ignore
+    except Exception:
+        load_model = None
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +23,9 @@ BASE = Path(__file__).resolve().parents[2]
 
 # prefer Keras native format but fall back to legacy HDF5 for compatibility
 FER_MODEL_PATHS = [
+    BASE / 'models' / 'Fer_model' / 'fer_model.keras',
     BASE / 'models' / 'fer_model' / 'fer_model.keras',
+    BASE / 'models' / 'Fer_model' / 'fer_model.h5',
     BASE / 'models' / 'fer_model' / 'fer_model.h5',
 ]
 SPEECH_MODEL_PATHS = [
@@ -28,7 +33,9 @@ SPEECH_MODEL_PATHS = [
     BASE / 'models' / 'speech_model' / 'speech_model.h5',
 ]
 TEXT_MODEL_PATH = BASE / 'models' / 'text_model.pkl'
-VECT_PATH = BASE / 'models' / 'vectorizer.pkl'
+VECT_PATH = BASE / 'models' / 'text_model' / 'vectorizer.pkl'
+TEXT_MODEL_KERAS_PATH = BASE / 'models' / 'text_model' / 'text_model.keras'
+TEXT_LE_PATH = BASE / 'models' / 'text_model' / 'label_encoder.pkl'
 SPEECH_LE_PATH = BASE / 'models' / 'speech_model' / 'speech_label_encoder.pkl'
 FUSION_MODEL_PATH = BASE / 'models' / 'fusion_model' / 'fusion_model.pkl'
 
@@ -125,7 +132,15 @@ def load_all(verbose: bool = False) -> Tuple[Optional[object], Optional[object],
     # text model / artifacts
     if joblib is not None:
         try:
-            if TEXT_MODEL_PATH.exists():
+            # Try keras model first, then fallback to pkl
+            if TEXT_MODEL_KERAS_PATH.exists():
+                try:
+                    text_model = load_model(str(TEXT_MODEL_KERAS_PATH))
+                except Exception as ex:
+                    logger.warning("Failed to load text model from keras: %s", ex)
+                    if TEXT_MODEL_PATH.exists():
+                        text_model = joblib.load(TEXT_MODEL_PATH)
+            elif TEXT_MODEL_PATH.exists():
                 text_model = joblib.load(TEXT_MODEL_PATH)
         except Exception as ex:
             logger.warning("Failed to load text model from %s: %s", TEXT_MODEL_PATH, ex)

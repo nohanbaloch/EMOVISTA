@@ -24,7 +24,7 @@ except Exception:
 
 # --- Paths ---
 ROOT = Path(__file__).resolve().parents[2]
-CREMA_AUDIO_DIR = ROOT / 'Data' / 'CREMA-D' / 'AudioWAV'
+CREMA_AUDIO_DIR = ROOT / 'data' / 'CREMA-D' / 'AudioWAV'
 DATA_SPEECH_DIR = ROOT / 'data' / 'speech'
 DATA_SPEECH_DIR.mkdir(parents=True, exist_ok=True)
 SAVE_FEATURES = DATA_SPEECH_DIR / 'features_cremad.npy'
