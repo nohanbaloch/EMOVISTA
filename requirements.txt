@@ -1,0 +1,17 @@
+streamlit
+streamlit-webrtc
+av
+opencv-python
+librosa
+numpy
+joblib
+tensorflow
+scikit-learn
+matplotlib
+flask
+flask-cors
+sounddevice
+vosk
+pyttsx3
+ollama
+customtkinter

@@ -1,0 +1,465 @@
+/* EMOVISTA Medical-Grade Design System */
+:root {
+  /* Medical Color Palette */
+  --bg-primary: #0a0e1a; /* Deep Navy - Primary Background */
+  --bg-secondary: #121827; /* Midnight Blue - Secondary Background */
+  --surface: #1a2332; /* Muted Indigo Surface */
+  --surface-elevated: #232f42; /* Elevated Surface */
+  --surface-glass: rgba(26, 35, 50, 0.7); /* Glassmorphism */
+
+  /* Accent Colors */
+  --accent-cyan: #4fd1c5; /* Soft Cyan - Medical Teal */
+  --accent-cyan-muted: #38b2ac; /* Muted Cyan */
+  --accent-cyan-dim: rgba(79, 209, 197, 0.15); /* Dim Cyan for backgrounds */
+
+  /* Text Colors */
+  --text-primary: #e2e8f0; /* Primary Text */
+  --text-secondary: #94a3b8; /* Secondary Text */
+  --text-muted: #64748b; /* Muted Text */
+  --text-inverse: #0a0e1a; /* Inverse Text */
+
+  /* Border & Dividers */
+  --border-subtle: rgba(148, 163, 184, 0.12);
+  --border-medium: rgba(148, 163, 184, 0.2);
+
+  /* Emotion Indicator Colors (Medical-Grade) */
+  --emotion-calm: #60a5fa; /* Soft Blue */
+  --emotion-stress: #fbbf24; /* Amber */
+  --emotion-anger: #f87171; /* Muted Red */
+  --emotion-sadness: #a78bfa; /* Desaturated Purple */
+  --emotion-neutral: #94a3b8; /* Slate */
+  --emotion-happy: #34d399; /* Soft Green */
+
+  /* Message Bubbles */
+  --message-user-bg: #2d3e57;
+  --message-assistant-bg: #1a2332;
+
+  /* Typography */
+  --font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", monospace;
+
+  /* Spacing Scale (Medical-grade breathing room) */
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 900px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle Medical Background Gradient */
+.app-container::before {
+  content: "";
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, var(--accent-cyan-dim) 0%, transparent 70%);
+  opacity: 0.3;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(60px);
+}
+
+.app-container::after {
+  content: "";
+  position: absolute;
+  bottom: -100px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(79, 209, 197, 0.08) 0%, transparent 70%);
+  opacity: 0.4;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(60px);
+}
+
+/* Header - Medical Professional */
+.app-header {
+  padding: var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-glass);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  z-index: 10;
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-muted) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* Emotion Badge - Clinical Display */
+.emotion-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: var(--surface-elevated);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-medium);
+  min-width: 160px;
+  box-shadow: var(--shadow-sm);
+}
+
+.emotion-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.emotion-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--accent-cyan);
+  margin-top: 0.125rem;
+}
+
+.model-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 170px;
+}
+
+.model-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.model-select {
+  appearance: none;
+  border: 1px solid var(--border-medium);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.model-select:focus {
+  border-color: var(--accent-cyan-muted);
+  box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.14);
+}
+
+.model-select option {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+/* Webcam Styles - Clinical Monitoring */
+.webcam-container {
+  position: relative;
+  width: 140px;
+  height: 105px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+#webcam {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Mirror effect */
+}
+
+.scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 40%,
+    var(--accent-cyan-dim) 50%,
+    transparent 60%
+  );
+  background-size: 100% 200%;
+  animation: scan 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes scan {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 0% 200%;
+  }
+}
+
+/* Chat Interface - Calm Medical Conversation */
+.chat-interface {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  scroll-behavior: smooth;
+  z-index: 1;
+}
+
+.chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Messages - Professional Medical Communication */
+.message {
+  display: flex;
+  max-width: 75%;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.message.user-message {
+  align-self: flex-end;
+}
+
+.message.assistant-message {
+  align-self: flex-start;
+}
+
+.message-content {
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  box-shadow: var(--shadow-sm);
+}
+
+.user-message .message-content {
+  background-color: var(--message-user-bg);
+  color: var(--text-primary);
+  border-bottom-right-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.assistant-message .message-content {
+  background-color: var(--message-assistant-bg);
+  color: var(--text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+  border: 1px solid var(--border-medium);
+}
+
+/* Input Area - Clean Medical Interface */
+.input-area {
+  padding: var(--space-xl);
+  background: linear-gradient(to top, var(--bg-primary), transparent);
+  z-index: 10;
+}
+
+.input-wrapper {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  background: var(--surface);
+  padding: var(--space-xs);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-md);
+  transition: border-color 0.2s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--accent-cyan-muted);
+}
+
+#user-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: var(--space-md) var(--space-lg);
+  outline: none;
+}
+
+#user-input::placeholder {
+  color: var(--text-muted);
+}
+
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.send-btn {
+  background-color: var(--surface-elevated);
+  color: var(--accent-cyan);
+}
+
+.send-btn:hover {
+  background-color: var(--accent-cyan-dim);
+  transform: translateY(-1px);
+}
+
+.mic-btn {
+  background-color: var(--accent-cyan-muted);
+  color: var(--text-inverse);
+  box-shadow: 0 0 12px var(--accent-cyan-dim);
+}
+
+.mic-btn:hover {
+  background-color: var(--accent-cyan);
+  transform: scale(1.05);
+}
+
+.mic-btn.listening {
+  background-color: var(--emotion-stress);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+  animation: pulse 1.5s infinite;
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    justify-content: center;
+  }
+
+  .emotion-badge,
+  .model-selector {
+    min-width: 150px;
+  }
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

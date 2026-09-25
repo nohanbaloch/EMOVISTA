@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="EMOVISTA - Medical-grade emotion analysis assistant for healthcare professionals"
+    />
+    <title>EMOVISTA – Medical Emotion Assistant</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <div class="header-left">
+          <div class="logo">
+            <span class="logo-text">EMOVISTA</span>
+            <span class="logo-sub">Medical Emotion Assistant</span>
+          </div>
+        </div>
+
+        <div class="webcam-container">
+          <video id="webcam" autoplay playsinline muted></video>
+          <div class="scan-overlay"></div>
+        </div>
+
+        <div class="emotion-badge" id="emotion-display">
+          <span class="emotion-label">Current Emotional State</span>
+          <span class="emotion-value" id="emotion">Initializing...</span>
+        </div>
+
+        <div class="model-selector" aria-label="LLM model selector">
+          <label for="model-select" class="model-label">LLM Model</label>
+          <select id="model-select" class="model-select" title="Choose Ollama model">
+            <option value="phi3">phi3</option>
+          </select>
+        </div>
+      </header>
+
+      <main class="chat-interface">
+        <div id="chat" class="chat-history">
+          <div class="message assistant-message">
+            <div class="message-content">
+              Hello. I am your Medical Emotion Assistant. I'm here to listen and
+              provide support. How are you feeling today?
+            </div>
+          </div>
+          <div class="message assistant-message">
+            <div
+              class="message-content"
+              style="font-size: 0.85rem; opacity: 0.7; font-style: italic"
+            >
+              Note: This system provides emotional support only. It does not
+              diagnose medical conditions. For medical emergencies, contact your
+              healthcare provider.
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="input-area">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="user-input"
+            placeholder="Share your thoughts..."
+            onkeypress="handleKeyPress(event)"
+            aria-label="Message input"
+          />
+
+          <button
+            id="send-btn"
+            class="icon-button send-btn"
+            onclick="sendMessage()"
+            title="Send Message"
+            aria-label="Send message"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+
+          <button
+            id="talk-btn"
+            class="icon-button mic-btn"
+            onclick="talk()"
+            title="Voice Input"
+            aria-label="Voice input"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+              ></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
