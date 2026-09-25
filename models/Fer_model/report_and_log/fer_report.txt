@@ -1,0 +1,5 @@
+FER CNN Training Report
+Model saved at: c:\Data\EMOVISTA\src\fer\..\..\models\fer_model\fer_cnn_model.keras
+Final Validation Accuracy: 0.24714405834674835
+Final Validation Loss: 1.8131279945373535
+Artifacts stored in model/report_and_log
