@@ -1,91 +1,97 @@
-# 🎭 EMOVISTA - Emotion-Aware AI Assistant Setup
+# EMOVISTA - Setup & Operational Guide
 
-## ✅ Project Status: FIXED & READY
+## 📋 System Prerequisites
+- **Python**: Version 3.12+ (tested on Windows and Linux).
+- **Audio & Video Hardware**: A functional webcam (for FER) and microphone (for STT).
+- **Ollama**: Optional for local conversational LLM (`phi3`).
 
-### Errors Fixed:
-1. **❌ → ✅ Missing `src/main.py`** - Created real-time emotion detection entry point
-2. **❌ → ✅ Dataset path mismatch** - Updated speech training to use `data/` (lowercase)
-3. **❌ → ✅ FER model save path** - Correctly configured to save in `models/fer_model/`
-4. **❌ → ✅ Model loading paths** - Updated to match actual structure: `Fer_model/` (capital F)
-
-### Current Project Structure:
-
-```
-models/
-├── Fer_model/
-│   └── fer_model.keras          ✅ Trained FER model
-├── speech_model/
-│   ├── speech_model.keras       ✅ Trained Speech model
-│   └── speech_label_encoder.pkl ✅ Label encoder
-├── text_model/
-│   ├── text_model.keras         ✅ Trained Text model
-│   ├── vectorizer.pkl           ✅ Text vectorizer
-│   └── label_encoder.pkl        ✅ Label encoder
-└── fusion_model/
-    └── fusion_model.keras       ✅ Fusion model
-```
+---
 
 ## 🚀 Installation
 
-### Using Micromamba:
+### 1. Clone & Set Up Virtual Environment
 ```bash
-/home/nohan/micromamba/bin/python3 -m pip install -r requirements.txt
+# Create and activate virtual environment
+python -m venv venv
+
+# Windows (Command Prompt / PowerShell):
+venv\Scripts\activate
+
+# Linux / macOS:
+source venv/bin/activate
 ```
 
-### Core Dependencies (Required):
-- **tensorflow** (2.21.0+) - Model loading
-- **scikit-learn** - Vectorizers & label encoders
-- **opencv-python** - Face detection
-- **librosa** - Audio processing
-- **numpy** - Numerical operations
-- **joblib** - Model persistence
-- **matplotlib** - Visualization
-
-### Optional Dependencies:
-- **flask**, **flask-cors** - Web API
-- **sounddevice** - Real-time microphone input
-- **streamlit** - Web UI
-- **customtkinter** - Desktop UI
-
-## 📌 Quick Test
-
+### 2. Install Dependencies
 ```bash
-cd /home/nohan/Workspace/AI/EMOVISTA
-
-# Test model loading
-python3 -c "
-import sys
-sys.path.insert(0, 'src')
-from fusion.emotion_fusion import load_all
-fer, speech, text, vect, le = load_all(verbose=True)
-print('✅ Models ready!')
-"
-
-# Run real-time assistant
-python3 src/main.py
+pip install -r requirements.txt
 ```
 
-## 📁 Key Files Updated
+---
 
-- **src/fer/train_fer.py** - Dataset path fix + Keras model save
-- **src/speech/train_speech_cremad.py** - Case-sensitive path fix (`Data/` → `data/`)
-- **src/fusion/emotion_fusion.py** - Model path discovery & loading
-- **src/main.py** - NEW: Real-time webcam emotion detection
-- **app.py** - Web API with emotion fusion
+## 📁 Model Directory Configuration
 
-## 🎯 No More Datasets Required!
+The repository includes pre-trained model artifacts:
 
-All models are pre-trained and stored in `models/`. The project runs with:
-- ✅ Trained models only
-- ✅ No dataset downloads needed
-- ✅ Ready-to-use inference
+| Modality | Path | Input Dimensions | Target Output |
+| :--- | :--- | :--- | :--- |
+| **FER (Face)** | `models/Fer_model/fer_model.keras` | `(None, 100, 100, 1)` | 7 emotion classes |
+| **SER (Speech)** | `models/speech_model/speech_model.keras` | `(None, 40, 1)` | 6 CREMA-D classes |
+| **Text Sentiment** | `models/text_model/text_model.keras` | `(None, 100)` | Binary sentiment |
+| **Offline STT** | `models/vosk/vosk-model-small-en-us-0.15/` | 16 kHz Mono PCM | Text transcription |
 
-## 🔧 Runtime Paths
+---
 
-All paths are configured relative to repo root:
-- Models: `BASE/models/`
-- Data (optional): `BASE/data/`
-- Scripts resolve paths using `Path(__file__).resolve().parents[n]`
+## ⚙️ Environment Variables
 
-**No hardcoded paths!** Everything is platform-agnostic.
+All runtime settings can be customized using environment variables:
 
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `FLASK_DEBUG` | `false` | Set to `1` or `true` for local Flask reloader |
+| `EMOVISTA_HOST` | `127.0.0.1` | Web server bind host |
+| `EMOVISTA_PORT` | `5000` | Web server port |
+| `EMOVISTA_ALLOWED_ORIGINS` | `http://localhost:5000,http://127.0.0.1:5000` | Allowed CORS origins (comma-separated) |
+| `VOSK_MODEL_PATH` | `models/vosk/vosk-model-small-en-us-0.15` | Path to unpacked Vosk model directory |
+| `MAX_IMAGE_SIZE_BYTES` | `5242880` (5 MB) | Maximum accepted image payload on `/analyze_face` |
+
+---
+
+## 🧪 Verification & Testing
+
+### 1. Run Multimodal Fusion Unit Tests
+```bash
+python -m unittest tests/test_fusion.py
+```
+*Tests all modalities present, missing modalities, malformed vector lengths, and sentiment mappings.*
+
+### 2. Run FER Diagnostic Evaluation
+```bash
+python scripts/evaluate_fer.py
+```
+*Evaluates the shipped FER model. If `data/FER-2013/test/` is present, computes per-class precision, recall, and accuracy; otherwise runs synthetic probe analysis.*
+
+### 3. Verify Model Loading
+```bash
+python -c "from src.fusion.emotion_fusion import load_all; fer, spk, txt, vec, le = load_all(verbose=True); print('Models ready!')"
+```
+
+---
+
+## 🖥️ Running the Application
+
+### 1. Web Application (Flask Dashboard)
+```bash
+python app.py
+```
+Access the dashboard at `http://127.0.0.1:5000`. If the Vosk speech model or microphone is unavailable, `/stt` returns a clear 503 error status code while face and text analysis continue to work seamlessly.
+
+### 2. Desktop GUI (CustomTkinter)
+```bash
+python customtkinter-main.py
+```
+
+### 3. Webcam CLI Demo
+```bash
+python src/main.py
+```
+Press `q` to quit the webcam view.

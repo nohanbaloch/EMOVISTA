@@ -1,220 +1,261 @@
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras import layers, models
+#!/usr/bin/env python3
+"""
+src/fer/train_fer.py
+
+Facial Expression Recognition (FER) training script.
+Uses EfficientNetB0 backbone, corrected preprocessing, mild augmentation,
+class-balanced weights, staged fine-tuning, and early stopping.
+
+Expected dataset layout (relative to repo root):
+data/FER-2013/
+    train/
+        angry/
+        disgust/
+        fear/
+        happy/
+        neutral/
+        sad/
+        surprise/
+    test/
+        angry/
+        disgust/
+        fear/
+        happy/
+        neutral/
+        sad/
+        surprise/
+"""
+
 import os
 import json
 import numpy as np
+from pathlib import Path
+from sklearn.utils import class_weight
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras import layers, models
 from tensorflow.keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
 from tensorflow.keras.applications import EfficientNetB0
-from tensorflow.keras.applications.efficientnet import preprocess_input
+import matplotlib.pyplot as plt
 
-# --------------------
-# Paths (use repo-relative defaults)
-# --------------------
-BASE_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
-DATASET_PATH = os.path.join(BASE_DIR, 'data', 'FER-2013')  # repo-relative default
+# -----------------------
+# Configuration & Paths
+# -----------------------
+BASE_DIR = Path(__file__).resolve().parents[2]
+DATASET_PATH = BASE_DIR / 'data' / 'FER-2013'
+TRAIN_DIR = DATASET_PATH / 'train'
+TEST_DIR = DATASET_PATH / 'test'
 
-train_dir = os.path.join(DATASET_PATH, 'train')
-test_dir = os.path.join(DATASET_PATH, 'test')
-FER_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'fer_model')
-os.makedirs(FER_MODEL_DIR, exist_ok=True)
-SAVE_MODEL = os.path.join(FER_MODEL_DIR, 'fer_model.keras')
+MODEL_DIR = BASE_DIR / 'models' / 'Fer_model'
+REPORT_DIR = MODEL_DIR / 'report_and_log'
+LOGS_DIR = REPORT_DIR / 'logs'
 
-# fail fast with a helpful message if data not found
-if not os.path.exists(train_dir) or not os.path.exists(test_dir):
-    raise FileNotFoundError(
-        f"FER dataset not found at {DATASET_PATH}. Expected subfolders 'train' and 'test'.\n"
-        "Place FER-2013 under 'data/FER-2013' relative to repo root, or update DATASET_PATH in this script."
+IMG_SIZE = (96, 96)
+BATCH_SIZE = 32
+INITIAL_EPOCHS = 20
+FINE_TUNE_EPOCHS = 25
+INITIAL_LR = 1e-4          # Transfer learning initial LR
+FINE_TUNE_LR = 1e-5         # Lower LR for fine-tuning
+UNFREEZE_LAST_N = 200      # Layers from end of base model to unfreeze
+RANDOM_SEED = 42
+
+os.makedirs(MODEL_DIR, exist_ok=True)
+os.makedirs(REPORT_DIR, exist_ok=True)
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+SAVE_MODEL_PATH = MODEL_DIR / 'fer_model.keras'
+CSV_LOG = REPORT_DIR / 'fer_training.csv'
+HISTORY_JSON = REPORT_DIR / 'fer_history.json'
+HISTORY_PLOT = REPORT_DIR / 'fer_history.png'
+REPORT_TXT = REPORT_DIR / 'fer_report.txt'
+
+tf.random.set_seed(RANDOM_SEED)
+np.random.seed(RANDOM_SEED)
+
+
+def train():
+    if not TRAIN_DIR.exists() or not TEST_DIR.exists():
+        raise FileNotFoundError(
+            f"FER dataset not found at {DATASET_PATH}. Expected 'train' and 'test' subdirectories.\n"
+            "Place FER images organized by class in data/FER-2013/train and data/FER-2013/test."
+        )
+
+    # -----------------------
+    # Data Generators (Mild augmentation preserving facial cues)
+    # -----------------------
+    train_datagen = ImageDataGenerator(
+        rescale=1.0 / 255.0,
+        rotation_range=8,
+        width_shift_range=0.05,
+        height_shift_range=0.05,
+        shear_range=0.05,
+        zoom_range=0.08,
+        horizontal_flip=True,
+        fill_mode='nearest'
     )
 
+    valid_datagen = ImageDataGenerator(rescale=1.0 / 255.0)
 
-# --------------------
-# Image Generators (transfer learning + stronger augmentation)
-# --------------------
-# Use a larger input for pretrained backbone and convert grayscale -> RGB in preprocessing
-img_size = (96, 96)
-batch_size = 32
+    train_gen = train_datagen.flow_from_directory(
+        str(TRAIN_DIR),
+        target_size=IMG_SIZE,
+        color_mode='rgb',
+        batch_size=BATCH_SIZE,
+        class_mode='categorical',
+        shuffle=True,
+        seed=RANDOM_SEED
+    )
 
-def to_rgb_and_preprocess(img):
-    # ImageDataGenerator passes images as float32 arrays in [0,255] or after rescale.
-    # If generator returns a 1-channel image, repeat channels to make 3 channels.
-    if img.ndim == 2:
-        img = np.expand_dims(img, axis=-1)
-    if img.shape[-1] == 1:
-        img = np.repeat(img, 3, axis=2)
-    return preprocess_input(img)
+    valid_gen = valid_datagen.flow_from_directory(
+        str(TEST_DIR),
+        target_size=IMG_SIZE,
+        color_mode='rgb',
+        batch_size=BATCH_SIZE,
+        class_mode='categorical',
+        shuffle=False
+    )
 
-train_gen = ImageDataGenerator(
-    preprocessing_function=to_rgb_and_preprocess,
-    rotation_range=30,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.15,
-    zoom_range=0.3,
-    horizontal_flip=True,
-    brightness_range=(0.7, 1.3),
-    fill_mode='reflect'
-)
+    print("\nClass indices (folder name -> class index):")
+    print(train_gen.class_indices)
+    num_classes = train_gen.num_classes
+    print(f"Detected {train_gen.samples} training images, {valid_gen.samples} validation images, {num_classes} classes.")
 
-test_gen = ImageDataGenerator(preprocessing_function=to_rgb_and_preprocess)
+    # -----------------------
+    # Compute class weights to correct severe class imbalance
+    # -----------------------
+    y_train = train_gen.classes
+    cw = class_weight.compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(y_train),
+        y=y_train
+    )
+    class_weights = {i: float(w) for i, w in enumerate(cw)}
+    print("\nComputed class weights:")
+    print(class_weights)
 
-train_data = train_gen.flow_from_directory(
-    train_dir,
-    target_size=img_size,
-    color_mode='rgb',
-    batch_size=batch_size,
-    class_mode='categorical'
-)
+    # -----------------------
+    # Build Transfer Learning Model
+    # -----------------------
+    base_model = EfficientNetB0(
+        input_shape=(IMG_SIZE[0], IMG_SIZE[1], 3),
+        include_top=False,
+        weights='imagenet'
+    )
+    base_model.trainable = False
 
-test_data = test_gen.flow_from_directory(
-    test_dir,
-    target_size=img_size,
-    color_mode='rgb',
-    batch_size=batch_size,
-    class_mode='categorical'
-)
+    x = base_model.output
+    x = layers.GlobalAveragePooling2D(name='gap')(x)
+    x = layers.Dense(512, activation='relu', name='fc1')(x)
+    x = layers.BatchNormalization(name='bn1')(x)
+    x = layers.Dropout(0.4, name='drop1')(x)
+    x = layers.Dense(256, activation='relu', name='fc2')(x)
+    x = layers.Dropout(0.3, name='drop2')(x)
+    output = layers.Dense(num_classes, activation='softmax', name='predictions')(x)
 
-# --------------------
-# Build model using pretrained backbone (EfficientNetB0 - stronger than MobileNetV2)
-# --------------------
-base_model = EfficientNetB0(
-    input_shape=(img_size[0], img_size[1], 3),
-    include_top=False,
-    weights='imagenet'
-)
-base_model.trainable = False  # freeze backbone for initial training
+    model = models.Model(inputs=base_model.input, outputs=output)
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=INITIAL_LR),
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
+    model.summary()
 
-x = base_model.output
-x = layers.GlobalAveragePooling2D()(x)
-x = layers.Dense(512, activation='relu')(x)  # larger top layer
-x = layers.BatchNormalization()(x)
-x = layers.Dropout(0.4)(x)
-x = layers.Dense(256, activation='relu')(x)
-x = layers.Dropout(0.3)(x)
-output = layers.Dense(7, activation='softmax')(x)
+    callbacks = [
+        ModelCheckpoint(str(SAVE_MODEL_PATH), monitor='val_accuracy', verbose=1, save_best_only=True),
+        CSVLogger(str(CSV_LOG)),
+        TensorBoard(log_dir=str(LOGS_DIR)),
+        EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True, verbose=1)
+    ]
 
-model = models.Model(inputs=base_model.input, outputs=output)
+    steps_per_epoch = max(1, train_gen.samples // BATCH_SIZE)
+    validation_steps = max(1, valid_gen.samples // BATCH_SIZE)
 
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-) 
+    # Stage 1: Train classification head
+    print("\n--- STAGE 1: Training Classification Head ---")
+    history1 = model.fit(
+        train_gen,
+        steps_per_epoch=steps_per_epoch,
+        epochs=INITIAL_EPOCHS,
+        validation_data=valid_gen,
+        validation_steps=validation_steps,
+        callbacks=callbacks,
+        class_weight=class_weights,
+        verbose=2
+    )
 
-model.summary()
+    # Stage 2: Fine-tune backbone
+    print("\n--- STAGE 2: Fine-Tuning Backbone ---")
+    total_layers = len(base_model.layers)
+    n = min(UNFREEZE_LAST_N, total_layers)
+    for layer in base_model.layers[-n:]:
+        layer.trainable = True
 
-# --------------------
-# Train
-# --------------------
-# --------------------
-# Callbacks: save best model, CSV log, tensorboard, early stopping
-# --------------------
-REPORT_DIR = os.path.join(FER_MODEL_DIR, 'report_and_log')
-LOGS_DIR = os.path.join(REPORT_DIR, 'logs')
-CSV_LOG = os.path.join(REPORT_DIR, 'fer_training.csv')
-HISTORY_JSON = os.path.join(REPORT_DIR, 'fer_history.json')
-HISTORY_PLOT = os.path.join(REPORT_DIR, 'fer_history.png')
-REPORT_TXT = os.path.join(REPORT_DIR, 'fer_report.txt')
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=FINE_TUNE_LR),
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
 
-os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(REPORT_DIR, exist_ok=True)
+    initial_epoch = history1.epoch[-1] + 1 if hasattr(history1, 'epoch') and history1.epoch else INITIAL_EPOCHS
+    total_epochs = INITIAL_EPOCHS + FINE_TUNE_EPOCHS
 
-callbacks = [
-    ModelCheckpoint(SAVE_MODEL, monitor='val_accuracy', save_best_only=True, verbose=1),
-    CSVLogger(CSV_LOG),
-    TensorBoard(log_dir=LOGS_DIR),
-    EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True, verbose=1),
-]
+    history2 = model.fit(
+        train_gen,
+        steps_per_epoch=steps_per_epoch,
+        epochs=total_epochs,
+        initial_epoch=initial_epoch,
+        validation_data=valid_gen,
+        validation_steps=validation_steps,
+        callbacks=callbacks,
+        class_weight=class_weights,
+        verbose=2
+    )
 
-# Two-stage training: initial training of top layers, then extensive fine-tuning
-initial_epochs = 20
-history1 = model.fit(
-    train_data,
-    validation_data=test_data,
-    epochs=initial_epochs,
-    callbacks=callbacks
-)
+    # Combine histories and save reports
+    history = history1
+    for k, v in history2.history.items():
+        history.history.setdefault(k, []).extend(v)
 
-# Fine-tune: unfreeze more layers in the base_model and continue training longer
-fine_tune_at = -50  # unfreeze last ~50 layers (more aggressive)
-for layer in base_model.layers[fine_tune_at:]:
-    layer.trainable = True
+    try:
+        with open(HISTORY_JSON, 'w') as f:
+            json.dump(history.history, f)
+    except Exception as e:
+        print("Warning: failed to write history JSON:", e)
 
-# recompile with lower LR
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-)
+    try:
+        plt.figure(figsize=(9, 5))
+        if 'accuracy' in history.history:
+            plt.plot(history.history['accuracy'], label='train_acc')
+        if 'val_accuracy' in history.history:
+            plt.plot(history.history['val_accuracy'], label='val_acc')
+        if 'loss' in history.history:
+            plt.plot(history.history['loss'], label='train_loss')
+        if 'val_loss' in history.history:
+            plt.plot(history.history['val_loss'], label='val_loss')
+        plt.legend()
+        plt.title('FER Training History')
+        plt.xlabel('Epoch')
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(HISTORY_PLOT)
+        plt.close()
+    except Exception as e:
+        print("Warning: failed to save training plot:", e)
 
-fine_tune_epochs = 25  # more epochs for fine-tuning
-total_epochs = initial_epochs + fine_tune_epochs
-history2 = model.fit(
-    train_data,
-    validation_data=test_data,
-    epochs=total_epochs,
-    initial_epoch=history1.epoch[-1] + 1 if hasattr(history1, 'epoch') and history1.epoch else initial_epochs,
-    callbacks=callbacks
-)
+    try:
+        final_val_acc = history.history.get('val_accuracy', [None])[-1]
+        final_val_loss = history.history.get('val_loss', [None])[-1]
+        with open(REPORT_TXT, 'w') as f:
+            f.write("FER CNN Training Report\n")
+            f.write(f"Model saved at: {SAVE_MODEL_PATH}\n")
+            f.write(f"Final Validation Accuracy: {final_val_acc}\n")
+            f.write(f"Final Validation Loss: {final_val_loss}\n")
+            f.write(f"Class indices: {train_gen.class_indices}\n")
+    except Exception as e:
+        print("Warning: failed to write report:", e)
 
-# Combine histories for reporting
-history = history1
-for k, v in history2.history.items():
-    history.history.setdefault(k, []).extend(v)
+    print("\nTraining complete. Model saved to:", SAVE_MODEL_PATH)
 
-# --------------------
-# Save human-readable training outputs: JSON, plot, and summary report
-# --------------------
-# Save history to JSON
-try:
-    with open(HISTORY_JSON, 'w') as f:
-        json.dump(history.history, f)
-except Exception as e:
-    print('Warning: failed to write history JSON:', e)
 
-# Plot training curves
-try:
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(8, 4))
-    if 'accuracy' in history.history:
-        plt.plot(history.history['accuracy'], label='train_acc')
-    if 'val_accuracy' in history.history:
-        plt.plot(history.history['val_accuracy'], label='val_acc')
-    if 'loss' in history.history:
-        plt.plot(history.history['loss'], label='train_loss')
-    if 'val_loss' in history.history:
-        plt.plot(history.history['val_loss'], label='val_loss')
-    plt.legend()
-    plt.title('Training history')
-    plt.xlabel('Epoch')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(HISTORY_PLOT)
-    plt.close()
-except Exception as e:
-    print('Warning: failed to save training plot:', e)
-
-# Write a short report
-try:
-    final_acc = history.history.get('val_accuracy', [None])[-1]
-    final_loss = history.history.get('val_loss', [None])[-1]
-    with open(REPORT_TXT, 'w') as f:
-        f.write(f'FER training report\n')
-        f.write(f'Model path: {SAVE_MODEL}\n')
-        f.write(f'Final validation loss: {final_loss}\n')
-        f.write(f'Final validation accuracy: {final_acc}\n')
-        f.write('\nSaved artifacts:\n')
-        f.write(f' - history JSON: {HISTORY_JSON}\n')
-        f.write(f' - CSV log: {CSV_LOG}\n')
-        f.write(f' - plot: {HISTORY_PLOT}\n')
-        f.write(f' - tensorboard logs: {LOGS_DIR}\n')
-except Exception as e:
-    print('Warning: failed to write report:', e)
-
-# --------------------
-# Save model
-# --------------------
-model.save(SAVE_MODEL)
-
-print(f"Model saved as {SAVE_MODEL}")
-print(f"All artifacts saved to: {FER_MODEL_DIR}")
+if __name__ == '__main__':
+    train()

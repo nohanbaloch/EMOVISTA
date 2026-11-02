@@ -57,31 +57,24 @@ if str(SRC_DIR) not in sys.path:
 # ---------------- CORE IMPORTS ----------------
 from src.fusion.emotion_fusion import load_all, fuse, fer_labels
 
-# ---------------- MOCK/STUB MODULES FOR MISSING FILES ----------------
+from src.fusion.severity_engine import SeverityEngine, DESCRIPTIVE_STATE_MAP, NON_DIAGNOSTIC_DISCLAIMER
+from src.memory.patient_memory import PatientMemory as EncryptedPatientMemory
+
+# ---------------- NON-DIAGNOSTIC ADVISORY MODULES ----------------
 class TrendAnalyzer:
-    def __init__(self): pass
-    def analyze(self, *args, **kwargs): return {}
+    def __init__(self):
+        self.history = []
+    def analyze(self, emotion, severity_score):
+        self.history.append((emotion, severity_score))
+        return {"trend": "stable", "history_len": len(self.history)}
 
 class EmergencyEscalation:
     def __init__(self): pass
-    def check(self, history):
+    def check(self, text):
+        from src.web.backend.llm_phi3 import is_crisis_text, DETERMINISTIC_CRISIS_RESPONSE
+        if is_crisis_text(text):
+            return {"escalate": True, "message": DETERMINISTIC_CRISIS_RESPONSE}
         return {"escalate": False, "message": ""}
-
-class SeverityEngine:
-    def __init__(self): pass
-    def evaluate(self, emotion, probabilities):
-        # Simple Mock Logic
-        score = int(np.max(probabilities) * 100) if probabilities is not None else 0
-        return {
-            "level": "Normal", 
-            "score": score, 
-            "response": f"I see you are feeling {emotion}."
-        }
-
-class EncryptedPatientMemory:
-    def __init__(self, patient_id): pass
-    def add_entry(self, emotion, severity, score): pass
-    def get_recent(self, n): return []
 
 # ---------------- EMBEDDED WEB BACKEND LOGIC ----------------
 import json
@@ -97,8 +90,8 @@ except ImportError:
 
 # --- PERSONA CONFIGURATION ---
 PERSONA_CONFIG = {
-  "id": "dr_Emovista_v1",
-  "name": "Dr. Emovista",
+  "id": "emovista_companion_v1",
+  "name": "Emovista",
   "voice": {
     "voice_idx": 1,
     "voice_rate": 145,
@@ -147,7 +140,7 @@ def load_system_prompt():
     emergency_text = f"Emergency Hotlines (USE ONLY FOR EXPLICIT SELF-HARM THREATS): Suicide={hotlines.get('suicide_prevention')}, Emergency={hotlines.get('emergency')}"
 
     return f"""
-You are Dr. Emovista, a friendly and supportive medical AI companion.
+You are Emovista, a friendly and supportive AI emotional companion. You are NOT a doctor or medical professional.
 
 Tone: {tone}.
 Style: {style}
@@ -262,7 +255,7 @@ ctk.set_default_color_theme("blue")
 
 app = ctk.CTk()
 app.geometry("1200x800")
-app.title("EMOVISTA – Emotion-Aware Medical Assistant")
+app.title("EMOVISTA – Emotion-Aware AI Companion")
 
 def on_closing():
     global running
@@ -350,6 +343,13 @@ import re
 sentence_endings = re.compile(r'[.!?\n]')
 
 def process_response(user_text, emotion):
+    from src.web.backend.llm_phi3 import is_crisis_text, DETERMINISTIC_CRISIS_RESPONSE
+    if is_crisis_text(user_text):
+        app.after(0, lambda: chat_history.insert("end", f"You: {user_text}\n"))
+        app.after(0, lambda: chat_history.insert("end", f"EMOVISTA: {DETERMINISTIC_CRISIS_RESPONSE}\n\n"))
+        speak(DETERMINISTIC_CRISIS_RESPONSE)
+        return
+
     if not assistant:
         return
 

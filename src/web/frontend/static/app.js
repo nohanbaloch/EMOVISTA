@@ -131,8 +131,14 @@ async function talk() {
   try {
     // 1. STT: Record and Transcribe
     const sttResponse = await fetch("/stt", { method: "POST" });
-    if (!sttResponse.ok) throw new Error("STT failed");
-    const sttData = await sttResponse.json();
+    const sttData = await sttResponse.json().catch(() => ({}));
+    if (!sttResponse.ok) {
+      const msg = sttData.error || "STT service is unavailable.";
+      appendMessage("assistant", msg);
+      talkBtn.classList.remove("listening");
+      talkBtn.disabled = false;
+      return;
+    }
     const text = sttData.text;
 
     // Reset Button State

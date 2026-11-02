@@ -1,17 +1,37 @@
-streamlit
-streamlit-webrtc
-av
-opencv-python
-librosa
-numpy
-joblib
-tensorflow
-scikit-learn
-matplotlib
-flask
-flask-cors
-sounddevice
-vosk
-pyttsx3
-ollama
-customtkinter
+# EMOVISTA Dependencies
+# Multimodal Emotion-Aware Assistant (FER + SER + Text Sentiment)
+
+# --- Core Web & Desktop Frameworks ---
+flask==3.1.3
+flask-cors==6.0.5
+customtkinter==6.0.0
+Pillow>=10.4.0,<=13.0.0
+
+# --- Security & Encrypted Memory ---
+cryptography==50.0.2
+
+# --- Numerical & Machine Learning ---
+numpy>=1.26.4,<3.0.0
+scikit-learn>=1.5.0,<=1.9.1
+joblib>=1.4.0,<=1.6.0
+matplotlib>=3.8.0,<=3.10.0
+
+# --- Computer Vision & Image Processing ---
+opencv-python>=4.9.0,<=4.12.0
+
+# --- Audio, Speech & Voice Processing ---
+librosa>=0.10.0,<=0.11.0
+sounddevice>=0.4.6,<=0.5.1
+vosk>=0.3.45
+pyttsx3>=2.90,<=2.99
+
+# --- Local LLM Assistant ---
+ollama>=0.3.0,<=0.5.0
+
+# --- Deep Learning (Inference & Training) ---
+# Note: Keras 3 with Torch or TensorFlow backend is used for .keras model loading.
+keras>=3.5.0,<=3.15.1
+# tensorflow>=2.16.1 (Optional if Keras is backed by PyTorch/OpenVINO)
+
+# --- Removed Unused Legacy Packages ---
+# streamlit, streamlit-webrtc, av: Removed (project uses Flask web dashboard and CustomTkinter desktop GUI).

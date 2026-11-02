@@ -1,28 +1,53 @@
-/.venc/
-/.vs/
-/.github/
-/env/
-/venv/
-/.vscode/
-/data/
-/folder_structure.json/
-/folder_structure_to_json.py/
-/WARP.md/
-/src/__init__.py/
-/src/speech/__pycache__/
-/src/web/backend/__pycache__/
-/src/fusion/__pycache__/
-/src/fer/__pycache__/
-/src/customtkinter_gui/__pycache__/
-/src/__pycache__/
-/src/memory/__pycache__/
-/.antigravityignore/
-/models/vosk/
-/models/vosk/vosk-model-en-us-0.22/
-/generate_presentation.py/
-/EMOVISTA_Presentation.pptx/
-/models/Fer_model/report_and_log/
-/models/speech_model/report_and_log/
-/models/text_model/report_and_log/
-/models/image_model/report_and_log/
-/other/
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+venv/
+env/
+.venv/
+.venc/
+
+# IDE and Editor files
+.vs/
+.vscode/
+*.swp
+*.swo
+
+# Datasets and raw features
+data/
+**/data/
+*.npy
+*.wav
+
+# Patient encryption keys and encrypted storage (STRICT)
+patient.key
+patient_memory.enc
+*.key
+*.enc
+
+# Logs and TensorBoard events
+*.tfevents*
+logs/
+**/logs/
+*.log
+
+# Models & Large binaries (preserve shipped models only)
+models/vosk/
+models/vosk/*
+*.tar.gz
+*.zip
+*.bin
+
+# Misc temporary files
+generate_presentation.py
+EMOVISTA_Presentation.pptx
+folder_structure.json
+folder_structure_to_json.py
+WARP.md
+other/

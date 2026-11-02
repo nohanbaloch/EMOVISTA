@@ -1,51 +1,100 @@
+"""
+src/fusion/emotion_fusion.py
+
+Multimodal Emotion Fusion Engine for EMOVISTA.
+Fuses visual (FER), audio (SER), and text sentiment modalities into a
+unified 7-emotion probability distribution:
+['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral'].
+
+Fusion Methodology:
+1. Base modality weights:
+   - Visual (FER): 50% (0.50)
+   - Speech (SER): 30% (0.30)
+   - Text Sentiment: 20% (0.20)
+2. Dynamic Renormalization:
+   When one or two modalities are absent or invalid, weights are
+   renormalized over the active modalities so their sum equals 1.0.
+3. Modality Alignments:
+   - Visual (FER): Direct 7-class prediction.
+   - Speech (SER): 6 CREMA-D classes (angry, disgust, fear, happy, neutral, sad).
+     *Surprise* is not present in speech audio and can only originate from visual FER.
+   - Text Sentiment: Binary sentiment [P(neg), P(pos)] is mapped to a 3-way
+     distribution [P(neg), P(neu), P(pos)] where Neutral represents model
+     uncertainty (low confidence) rather than a confident neutral prediction:
+       Confidence C = |P(pos) - P(neg)|
+       P(neu) = 1.0 - C
+       P(neg) = (1.0 - P(neu)) * (P(neg) / (P(neg) + P(pos)))
+       P(pos) = (1.0 - P(neu)) * (P(pos) / (P(neg) + P(pos)))
+     Then mapped: negative -> Sad, neutral -> Neutral, positive -> Happy.
+4. Fallback:
+   If all modalities are absent or malformed, the system gracefully falls back
+   to Neutral with a deterministic probability vector.
+"""
 
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple, Sequence
 
 import numpy as np
+
 try:
     import joblib  # type: ignore
 except Exception:
     joblib = None
+
 try:
-    from tensorflow.keras.models import load_model  # type: ignore
+    import keras  # type: ignore
+    load_model = keras.saving.load_model
 except Exception:
     try:
-        from keras.models import load_model  # type: ignore
+        from tensorflow.keras.models import load_model  # type: ignore
     except Exception:
         load_model = None
 
 logger = logging.getLogger(__name__)
 
-# base repo root (two levels up: src/fusion -> src -> repo)
+# Base repo root (two levels up: src/fusion -> src -> repo)
 BASE = Path(__file__).resolve().parents[2]
 
-# prefer Keras native format but fall back to legacy HDF5 for compatibility
+# Canonical model paths
 FER_MODEL_PATHS = [
     BASE / 'models' / 'Fer_model' / 'fer_model.keras',
     BASE / 'models' / 'fer_model' / 'fer_model.keras',
-    BASE / 'models' / 'Fer_model' / 'fer_model.h5',
-    BASE / 'models' / 'fer_model' / 'fer_model.h5',
 ]
 SPEECH_MODEL_PATHS = [
     BASE / 'models' / 'speech_model' / 'speech_model.keras',
-    BASE / 'models' / 'speech_model' / 'speech_model.h5',
 ]
-TEXT_MODEL_PATH = BASE / 'models' / 'text_model.pkl'
-VECT_PATH = BASE / 'models' / 'text_model' / 'vectorizer.pkl'
 TEXT_MODEL_KERAS_PATH = BASE / 'models' / 'text_model' / 'text_model.keras'
+TEXT_MODEL_PKL_PATH = BASE / 'models' / 'text_model.pkl'
+VECT_PATH = BASE / 'models' / 'text_model' / 'vectorizer.pkl'
 TEXT_LE_PATH = BASE / 'models' / 'text_model' / 'label_encoder.pkl'
 SPEECH_LE_PATH = BASE / 'models' / 'speech_model' / 'speech_label_encoder.pkl'
-FUSION_MODEL_PATH = BASE / 'models' / 'fusion_model' / 'fusion_model.pkl'
 
+# Fixed 7 target emotion labels
 fer_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
-def load_all(verbose: bool = False) -> Tuple[Optional[object], Optional[object], Optional[object], Optional[object], Optional[object]]:
-    """Load FER, speech and text models (and related artifacts).
+# Base fusion weights
+FER_WEIGHT = 0.50
+SPEECH_WEIGHT = 0.30
+TEXT_WEIGHT = 0.20
 
-    Returns a 5-tuple: (fer_model, speech_model, text_model, vectorizer, speech_label_encoder)
-    Any item may be None when the corresponding file is missing or fails to load.
+# Standard speech mapping: 6 CREMA-D classes -> FER labels
+SPEECH_TO_FER = {
+    'angry': 'Angry',
+    'disgust': 'Disgust',
+    'fear': 'Fear',
+    'happy': 'Happy',
+    'neutral': 'Neutral',
+    'sad': 'Sad',
+}
+
+
+def load_all(verbose: bool = False) -> Tuple[Optional[Any], Optional[Any], Optional[Any], Optional[Any], Optional[Any]]:
+    """Load FER, speech, and text models along with vectorizers and label encoders.
+
+    Returns a 5-tuple:
+        (fer_model, speech_model, text_model, vectorizer, speech_label_encoder)
+    Any item may be None if its file is absent or fails to load.
     """
     fer_model = None
     speech_model = None
@@ -53,276 +102,247 @@ def load_all(verbose: bool = False) -> Tuple[Optional[object], Optional[object],
     vectorizer = None
     speech_le = None
 
-    # load FER model: prefer exact configured paths, but also attempt to
-    # discover common variations (e.g. `models/Fer_model/fer_model.keras`).
-    def _discover_and_load_fer():
-        if load_model is None:
-            return None, None
-        # try configured candidates first
+    # Load FER model
+    if load_model is not None:
         for p in FER_MODEL_PATHS:
             if p.exists():
                 try:
                     if verbose:
-                        logger.info("Attempting to load FER model from %s", p)
-                    return load_model(str(p)), p
+                        logger.info("Loading FER model from %s", p)
+                    fer_model = load_model(str(p))
+                    break
                 except Exception as ex:
                     logger.warning("Failed to load FER model from %s: %s", p, ex)
 
-        # attempt discovery in the models/ directory (case/spacing tolerant)
-        models_dir = BASE / 'models'
-        if models_dir.exists() and models_dir.is_dir():
-            for child in models_dir.iterdir():
-                # check directories and files that look like FER model containers
-                name = child.name.lower()
-                if 'fer' in name or 'face' in name:
-                    # if it's a directory, look for common file names inside
-                    if child.is_dir():
-                        for candidate in ('fer_model.keras', 'fer_model.h5', 'fer_model.keras'.lower()):
-                            cand_path = child / candidate
-                            if cand_path.exists():
-                                try:
-                                    if verbose:
-                                        logger.info("Attempting to load FER model from discovered path %s", cand_path)
-                                    return load_model(str(cand_path)), cand_path
-                                except Exception as ex:
-                                    logger.warning("Failed to load discovered FER model %s: %s", cand_path, ex)
-                    else:
-                        # if it's a file whose name contains fer and looks like a Keras model
-                        if child.is_file() and child.suffix.lower() in ('.keras', '.h5'):
-                            try:
-                                if verbose:
-                                    logger.info("Attempting to load FER model from discovered file %s", child)
-                                return load_model(str(child)), child
-                            except Exception as ex:
-                                logger.warning("Failed to load discovered FER model %s: %s", child, ex)
-
-        # last resort: scan models dir recursively for files containing 'fer' and ending in .keras/.h5
-        if models_dir.exists():
-            for p in models_dir.rglob('*'):
-                if p.is_file() and p.suffix.lower() in ('.keras', '.h5') and 'fer' in p.name.lower():
-                    try:
-                        if verbose:
-                            logger.info("Attempting to load FER model from fallback scan %s", p)
-                        return load_model(str(p)), p
-                    except Exception as ex:
-                        logger.warning("Failed to load FER model from %s: %s", p, ex)
-
-        return None, None
-
-    fer_model, fer_path = _discover_and_load_fer()
-    if verbose and fer_model is None:
-        logger.info("FER model not found under %s; expected one of: %s", BASE / 'models', FER_MODEL_PATHS)
-
-    # speech model
+    # Load Speech model
     if load_model is not None:
         for p in SPEECH_MODEL_PATHS:
-            try:
-                if p.exists():
-                    if verbose:
-                        logger.info("Attempting to load speech model from %s", p)
-                    speech_model = load_model(str(p))
-                    if verbose:
-                        logger.info("Loaded speech model from %s", p)
-                    break
-            except Exception as ex:
-                logger.warning("Failed to load speech model from %s: %s", p, ex)
-                speech_model = None
-                continue
-
-    # text model / artifacts
-    if joblib is not None:
-        try:
-            # Try keras model first, then fallback to pkl
-            if TEXT_MODEL_KERAS_PATH.exists():
+            if p.exists():
                 try:
-                    text_model = load_model(str(TEXT_MODEL_KERAS_PATH))
+                    if verbose:
+                        logger.info("Loading speech model from %s", p)
+                    speech_model = load_model(str(p))
+                    break
                 except Exception as ex:
-                    logger.warning("Failed to load text model from keras: %s", ex)
-                    if TEXT_MODEL_PATH.exists():
-                        text_model = joblib.load(TEXT_MODEL_PATH)
-            elif TEXT_MODEL_PATH.exists():
-                text_model = joblib.load(TEXT_MODEL_PATH)
-        except Exception as ex:
-            logger.warning("Failed to load text model from %s: %s", TEXT_MODEL_PATH, ex)
-            text_model = None
+                    logger.warning("Failed to load speech model from %s: %s", p, ex)
 
-    if joblib is not None:
+    # Load Text model
+    if load_model is not None and TEXT_MODEL_KERAS_PATH.exists():
         try:
-            if VECT_PATH.exists():
+            if verbose:
+                logger.info("Loading text model from %s", TEXT_MODEL_KERAS_PATH)
+            text_model = load_model(str(TEXT_MODEL_KERAS_PATH))
+        except Exception as ex:
+            logger.warning("Failed to load text model from %s: %s", TEXT_MODEL_KERAS_PATH, ex)
+
+    if text_model is None and joblib is not None and TEXT_MODEL_PKL_PATH.exists():
+        try:
+            text_model = joblib.load(TEXT_MODEL_PKL_PATH)
+        except Exception as ex:
+            logger.warning("Failed to load text model from %s: %s", TEXT_MODEL_PKL_PATH, ex)
+
+    # Load Vectorizer and Label Encoders
+    if joblib is not None:
+        if VECT_PATH.exists():
+            try:
                 vectorizer = joblib.load(VECT_PATH)
-        except Exception as ex:
-            logger.warning("Failed to load vectorizer from %s: %s", VECT_PATH, ex)
-            vectorizer = None
+            except Exception as ex:
+                logger.warning("Failed to load vectorizer from %s: %s", VECT_PATH, ex)
 
-    if joblib is not None:
-        try:
-            if SPEECH_LE_PATH.exists():
+        if SPEECH_LE_PATH.exists():
+            try:
                 speech_le = joblib.load(SPEECH_LE_PATH)
-        except Exception as ex:
-            logger.warning("Failed to load speech label encoder from %s: %s", SPEECH_LE_PATH, ex)
-            speech_le = None
+            except Exception as ex:
+                logger.warning("Failed to load speech label encoder from %s: %s", SPEECH_LE_PATH, ex)
 
     return fer_model, speech_model, text_model, vectorizer, speech_le
 
-def map_speech_to_fer(speech_label: str) -> Optional[str]:
-    """Map a speech-label (CREMA-D) to FER label string.
 
-    Returns the FER label (capitalized) or None if no mapping exists.
+def map_speech_to_fer(speech_label: str) -> Optional[str]:
+    """Map a CREMA-D speech emotion label to the canonical FER label.
+
+    Note: Speech dataset contains 6 classes (angry, disgust, fear, happy, neutral, sad).
+    Surprise is not represented in CREMA-D and can only be detected via FER.
     """
     if not speech_label:
         return None
-    mapping = {
-        'angry': 'Angry',
-        'disgust': 'Disgust',
-        'fear': 'Fear',
-        'happy': 'Happy',
-        'neutral': 'Neutral',
-        'sad': 'Sad',
-    }
-    key = str(speech_label).strip().lower()
-    return mapping.get(key)
+    return SPEECH_TO_FER.get(str(speech_label).strip().lower())
 
-def fuse(fer_pred: Optional[np.ndarray], speech_pred: Optional[np.ndarray], speech_le, text_pred: Optional[np.ndarray]) -> Tuple[str, np.ndarray]:
-    """Fuse modality predictions into a single FER label.
 
-    - `fer_pred` is expected to be a length-7 probability vector (or None).
-    - `speech_pred` is a probability vector aligned with `speech_le.classes_` (or None).
-    - `text_pred` is expected to be length-3 probabilities [neg, neutral, pos] (or None).
+def map_binary_text_to_three_way(text_pred: Any) -> Optional[np.ndarray]:
+    """Map text model output to a 3-way distribution: [negative, neutral, positive].
 
-    Returns: (best_label, combined_prob_vector_of_length_7)
+    Handles:
+    - 2-way binary distribution: [P(neg), P(pos)]
+      Neutral is interpreted as low classifier confidence (uncertainty),
+      NOT a confident neutral prediction:
+        Confidence C = |P(pos) - P(neg)|
+        P(neutral) = 1.0 - C
+        P(negative) = (1.0 - P(neutral)) * normalized(P(neg))
+        P(positive) = (1.0 - P(neutral)) * normalized(P(pos))
+    - Scalar probability p in [0, 1] representing P(positive), where P(neg) = 1 - p.
+    - 3-way distribution: [P(neg), P(neutral), P(pos)] normalized to sum to 1.0.
+
+    Returns:
+        np.ndarray of length 3: [P(neg), P(neutral), P(pos)] or None if invalid.
     """
-    # Try to use a learned fusion model if available. The learned model
-    # (saved via joblib) should be a dict containing at least:
-    #   - 'model': a sklearn-like estimator with predict_proba
-    #   - 'meta': { 'n_speech': int, 'n_text': int, 'feature_columns': [...], ... }
-    # If loading or prediction fails we fall back to the legacy weighted scheme.
+    if text_pred is None:
+        return None
 
-    # Prepare numeric arrays for each modality (with safe padding/trimming helpers)
-    def _pad_or_trim(arr, length):
-        arr = np.asarray(arr, dtype=float).ravel() if arr is not None else np.array([], dtype=float)
-        if arr.size < length:
-            return np.concatenate([arr, np.zeros(length - arr.size, dtype=float)])
-        if arr.size > length:
-            return arr[:length]
-        return arr
-
-    fer_arr = None
     try:
-        if fer_pred is not None:
-            fer_arr = np.asarray(fer_pred, dtype=float).ravel()
+        arr = np.asarray(text_pred, dtype=float).ravel()
     except Exception:
-        fer_arr = None
+        return None
 
-    speech_arr = None
-    try:
-        if speech_pred is not None:
-            speech_arr = np.asarray(speech_pred, dtype=float).ravel()
-    except Exception:
-        speech_arr = None
+    if arr.size == 0 or np.isnan(arr).any() or np.isinf(arr).any():
+        return None
 
-    text_arr = None
-    try:
-        if text_pred is not None:
-            text_arr = np.asarray(text_pred, dtype=float).ravel()
-    except Exception:
-        text_arr = None
+    # Scalar input: probability of positive class
+    if arr.size == 1:
+        p_pos = float(np.clip(arr[0], 0.0, 1.0))
+        p_neg = 1.0 - p_pos
+        arr = np.array([p_neg, p_pos], dtype=float)
 
-    # Learned fusion path
-    if FUSION_MODEL_PATH.exists() and joblib is not None:
-        try:
-            payload = joblib.load(FUSION_MODEL_PATH)
-            # payload may be the model itself or a dict
-            if isinstance(payload, dict):
-                model = payload.get('model')
-                meta = payload.get('meta', {})
-            else:
-                model = payload
-                meta = {}
+    # Binary sentiment input: [p_neg, p_pos]
+    if arr.size == 2:
+        s = arr.sum()
+        if s > 0:
+            arr = arr / s
+        else:
+            arr = np.array([0.5, 0.5], dtype=float)
 
-            n_speech = int(meta.get('n_speech')) if meta.get('n_speech') is not None else (speech_arr.size if speech_arr is not None else 0)
-            n_text = int(meta.get('n_text')) if meta.get('n_text') is not None else (text_arr.size if text_arr is not None else 0)
+        p_neg, p_pos = float(arr[0]), float(arr[1])
+        confidence = abs(p_pos - p_neg)  # in [0, 1]
+        p_neutral = 1.0 - confidence     # high uncertainty => high neutral
 
-            feat = []
-            feat.extend(_pad_or_trim(fer_arr, 7))
-            feat.extend(_pad_or_trim(speech_arr, n_speech))
-            feat.extend(_pad_or_trim(text_arr, n_text))
+        active_mass = 1.0 - p_neutral
+        sum_polar = p_neg + p_pos
+        if sum_polar > 0:
+            p_neg_adj = active_mass * (p_neg / sum_polar)
+            p_pos_adj = active_mass * (p_pos / sum_polar)
+        else:
+            p_neg_adj = active_mass * 0.5
+            p_pos_adj = active_mass * 0.5
 
-            X = np.asarray(feat, dtype=float).reshape(1, -1)
+        three_way = np.array([p_neg_adj, p_neutral, p_pos_adj], dtype=float)
+        total = three_way.sum()
+        return three_way / total if total > 0 else np.array([0.0, 1.0, 0.0], dtype=float)
 
-            if hasattr(model, 'predict_proba'):
-                proba = model.predict_proba(X)[0]
-                model_classes = getattr(model, 'classes_', None)
-                # Build a length-7 probability vector aligned with module fer_labels
-                prob_vector = np.zeros(len(fer_labels), dtype=float)
-                if model_classes is not None:
-                    for i, cls in enumerate(model_classes):
-                        try:
-                            if cls in fer_labels:
-                                prob_vector[fer_labels.index(cls)] = proba[i]
-                        except Exception:
-                            continue
-                else:
-                    # If model did not expose classes_, try to assume the model was trained
-                    # to output probabilities in the same fer_labels order (best-effort).
-                    if proba.size == len(fer_labels):
-                        prob_vector = proba
+    # 3-way distribution input: [neg, neu, pos]
+    if arr.size == 3:
+        arr = np.clip(arr, 0.0, None)
+        s = arr.sum()
+        if s > 0:
+            return arr / s
+        return np.array([0.0, 1.0, 0.0], dtype=float)
 
-                ssum = prob_vector.sum()
-                if ssum > 0:
-                    prob_vector = prob_vector / ssum
-                    best_idx = int(np.argmax(prob_vector))
-                    return fer_labels[best_idx], prob_vector
-        except Exception as ex:
-            logger.warning("Learned fusion model load/predict failed: %s", ex)
+    # Wrong vector length (e.g. size 4, 5, etc.)
+    logger.warning("text_pred has unexpected length %s (expected 1, 2, or 3). Modality ignored.", arr.size)
+    return None
 
-    # Legacy weighted fusion (fallback)
-    combined = np.zeros(len(fer_labels), dtype=float)
 
-    # FER model contribution
+def fuse(
+    fer_pred: Optional[Any],
+    speech_pred: Optional[Any],
+    speech_le: Optional[Any],
+    text_pred: Optional[Any]
+) -> Tuple[str, np.ndarray]:
+    """Fuse predictions from FER, Speech, and Text modalities.
+
+    Arguments:
+        fer_pred: Length-7 probability vector aligned with `fer_labels`, or None.
+        speech_pred: Probability vector aligned with `speech_le.classes_` (6 classes), or None.
+        speech_le: Scikit-learn LabelEncoder for speech with `.classes_`, or None.
+        text_pred: Text sentiment probabilities (length 2 [neg, pos], 3 [neg, neu, pos], or scalar), or None.
+
+    Returns:
+        (predicted_emotion_label, combined_7_class_probabilities)
+    """
+    neutral_idx = fer_labels.index('Neutral') if 'Neutral' in fer_labels else 6
+    fallback_vector = np.zeros(len(fer_labels), dtype=float)
+    fallback_vector[neutral_idx] = 1.0
+
+    active_modalities = {}
+
+    # 1. Validate FER input
     if fer_pred is not None:
         try:
-            arr = np.asarray(fer_pred, dtype=float).ravel()
-            if arr.size == len(fer_labels):
-                combined += arr * 0.5
+            f_arr = np.asarray(fer_pred, dtype=float).ravel()
+            if f_arr.size == len(fer_labels) and not np.isnan(f_arr).any() and not np.isinf(f_arr).any():
+                f_arr = np.clip(f_arr, 0.0, None)
+                s = f_arr.sum()
+                if s > 0:
+                    active_modalities['fer'] = (f_arr / s, FER_WEIGHT)
+                else:
+                    logger.warning("fer_pred sum is 0; ignoring FER modality.")
             else:
-                logger.warning("fer_pred has unexpected size %s, expected %s", arr.size, len(fer_labels))
+                logger.warning("fer_pred has invalid length %s (expected %s) or contains NaN/Inf; ignoring.",
+                               f_arr.size, len(fer_labels))
         except Exception as ex:
-            logger.warning("Error processing fer_pred: %s", ex)
+            logger.warning("Error processing fer_pred: %s; ignoring.", ex)
 
-    # Speech -> project into FER label space
-    if speech_pred is not None and speech_le is not None:
+    # 2. Validate Speech input
+    if speech_pred is not None:
         try:
-            sarr = np.asarray(speech_pred, dtype=float).ravel()
-            classes = list(getattr(speech_le, 'classes_', []))
-            if sarr.size != len(classes):
-                logger.warning("speech_pred size (%s) does not match speech_le.classes_ (%s)", sarr.size, len(classes))
-            for i, cls in enumerate(classes):
-                if i >= sarr.size:
-                    break
-                mapped = map_speech_to_fer(cls)
-                if mapped and mapped in fer_labels:
-                    idx = fer_labels.index(mapped)
-                    combined[idx] += sarr[i] * 0.3
+            s_arr = np.asarray(speech_pred, dtype=float).ravel()
+            classes = list(getattr(speech_le, 'classes_', [])) if speech_le is not None else list(SPEECH_TO_FER.keys())
+            
+            if s_arr.size == len(classes) and not np.isnan(s_arr).any() and not np.isinf(s_arr).any():
+                s_arr = np.clip(s_arr, 0.0, None)
+                s_sum = s_arr.sum()
+                if s_sum > 0:
+                    s_norm = s_arr / s_sum
+                    # Project speech classes into 7-class FER space
+                    speech_7 = np.zeros(len(fer_labels), dtype=float)
+                    for i, cls in enumerate(classes):
+                        mapped = map_speech_to_fer(cls)
+                        if mapped and mapped in fer_labels:
+                            idx = fer_labels.index(mapped)
+                            speech_7[idx] += s_norm[i]
+                    # Note: 'Surprise' receives 0 from speech (CREMA-D does not contain surprise)
+                    active_modalities['speech'] = (speech_7, SPEECH_WEIGHT)
+                else:
+                    logger.warning("speech_pred sum is 0; ignoring Speech modality.")
+            else:
+                logger.warning("speech_pred size (%s) does not match expected classes (%s); ignoring.",
+                               s_arr.size, len(classes))
         except Exception as ex:
-            logger.warning("Error processing speech_pred: %s", ex)
+            logger.warning("Error processing speech_pred: %s; ignoring.", ex)
 
-    # Text mapping: approximate (negative->Sad, neutral->Neutral, positive->Happy)
+    # 3. Validate Text input
     if text_pred is not None:
         try:
-            tarr = np.asarray(text_pred, dtype=float).ravel()
-            if tarr.size >= 3:
-                combined[fer_labels.index('Sad')] += tarr[0] * 0.2
-                combined[fer_labels.index('Neutral')] += tarr[1] * 0.2
-                combined[fer_labels.index('Happy')] += tarr[2] * 0.2
-            else:
-                logger.warning("text_pred expected length>=3 but got %s", tarr.size)
+            mapped_text = map_binary_text_to_three_way(text_pred)
+            if mapped_text is not None:
+                # Map [neg, neu, pos] -> [Sad, Neutral, Happy] in 7-class space
+                text_7 = np.zeros(len(fer_labels), dtype=float)
+                text_7[fer_labels.index('Sad')] += mapped_text[0]
+                text_7[fer_labels.index('Neutral')] += mapped_text[1]
+                text_7[fer_labels.index('Happy')] += mapped_text[2]
+                active_modalities['text'] = (text_7, TEXT_WEIGHT)
         except Exception as ex:
-            logger.warning("Error processing text_pred: %s", ex)
+            logger.warning("Error processing text_pred: %s; ignoring.", ex)
 
-    # normalize
-    s = combined.sum()
-    if s > 0:
-        combined = combined / s
+    # 4. Fallback if no valid modalities
+    if not active_modalities:
+        return 'Neutral', fallback_vector
+
+    # 5. Dynamic Weight Renormalization
+    total_active_weight = sum(weight for _, weight in active_modalities.values())
+    if total_active_weight <= 0:
+        return 'Neutral', fallback_vector
+
+    combined = np.zeros(len(fer_labels), dtype=float)
+    for prob_vec, weight in active_modalities.values():
+        normalized_weight = weight / total_active_weight
+        combined += prob_vec * normalized_weight
+
+    # Ensure final normalization
+    c_sum = combined.sum()
+    if c_sum > 0:
+        combined = combined / c_sum
+    else:
+        return 'Neutral', fallback_vector
 
     best_idx = int(np.argmax(combined))
     return fer_labels[best_idx], combined

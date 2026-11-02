@@ -2,11 +2,23 @@ import os
 import json
 import sys
 import queue
-import sounddevice as sd
-from vosk import Model, KaldiRecognizer
+try:
+    import sounddevice as sd
+except ImportError:
+    sd = None
+
+try:
+    from vosk import Model, KaldiRecognizer
+except ImportError:
+    Model = None
+    KaldiRecognizer = None
 
 class VoskSTT:
     def __init__(self, model_path: str, sample_rate: int = 16000):
+        if Model is None or KaldiRecognizer is None:
+            raise ImportError("Vosk library is not installed. Run 'pip install vosk'.")
+        if sd is None:
+            raise ImportError("sounddevice library is not installed. Run 'pip install sounddevice'.")
         model_path = os.path.abspath(model_path)
 
         if not os.path.exists(model_path):
